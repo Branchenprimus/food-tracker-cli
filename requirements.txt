@@ -1,0 +1,6 @@
+typer
+rich
+pydantic
+fastapi
+uvicorn
+jinja2

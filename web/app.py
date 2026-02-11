@@ -1,0 +1,54 @@
+from fastapi import FastAPI, HTTPException, Body
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from typing import Optional, List
+from datetime import date
+from pydantic import BaseModel
+
+from core.service import FoodService
+from core.models import Entry, DailyStats
+
+app = FastAPI()
+service = FoodService()
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="web/static"), name="static")
+
+@app.get("/")
+def read_root():
+    return FileResponse("web/static/index.html")
+
+@app.get("/api/entries", response_model=List[Entry])
+def get_entries(date: Optional[date] = None):
+    # If date is provided, filter by that day (start and end = date)
+    if date:
+        return service.list_entries(from_date=date, to_date=date, limit=1000)
+    return service.list_entries(limit=100)
+
+@app.post("/api/entries", response_model=Entry)
+def add_entry(entry: Entry):
+    # We use the service to add, which handles ID generation
+    # But Entry model requires ID? No, ID is optional.
+    created = service.add_entry(
+        title=entry.title,
+        kcal=entry.kcal,
+        fat=entry.fat_g,
+        carbs=entry.carbs_g,
+        protein=entry.protein_g,
+        serving=entry.serving_amount,
+        confidence=entry.confidence,
+        entry_date=entry.entry_date,
+        entry_time=entry.entry_time
+    )
+    return created
+
+@app.delete("/api/entries/{entry_id}")
+def delete_entry(entry_id: int):
+    success = service.delete_entry(entry_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"status": "success"}
+
+@app.get("/api/stats/day", response_model=DailyStats)
+def get_daily_stats(date: Optional[date] = None):
+    return service.get_daily_summary(date)
