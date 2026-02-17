@@ -56,3 +56,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            APP_ENV=${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            APP_ENV=${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+          build-args: |
+            APP_VERSION=${{ github.ref_name == 'master' && 'prod' || 'dev' }}:${{ steps.meta.outputs.version }}
+            APP_ENV=${{ github.ref_name == 'master' && 'prod' || 'dev' }}

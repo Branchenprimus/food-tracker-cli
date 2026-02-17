@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Body
+import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional, List
@@ -10,6 +11,16 @@ from core.models import Entry, DailyStats
 
 app = FastAPI()
 service = FoodService()
+
+CMD_VERSION = os.getenv("APP_VERSION", "dev")
+CMD_ENV = os.getenv("APP_ENV", "dev")
+
+@app.get("/api/info")
+def get_info():
+    return {
+        "version": CMD_VERSION,
+        "env": CMD_ENV
+    }
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
@@ -57,3 +68,7 @@ def get_daily_stats(date: Optional[date] = None):
 def get_streak():
     streak = service.get_current_streak()
     return {"streak": streak}
+
+@app.get("/api/stats/history", response_model=List[DailyStats])
+def get_history(start: date, end: date):
+    return service.get_stats_history(start, end)

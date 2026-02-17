@@ -2,7 +2,7 @@
 
 dev:
 	docker compose -f deploy/compose.yml down
-	docker compose up -d --build
+	docker compose up -d --build --build-arg APP_VERSION=$(shell git describe --tags --always --dirty) --build-arg APP_ENV=dev
 
 master:
 	docker compose down

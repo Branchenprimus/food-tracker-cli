@@ -7,6 +7,7 @@
     <title>Food Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -26,6 +27,24 @@
             </div>
             <input type="date" v-model="currentDate" @change="fetchData" class="border rounded px-2 py-1 bg-white">
         </header>
+
+        <!-- Chart Section -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-gray-700">Trends</h2>
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button @click="chartView = 'week'" :class="{'bg-white shadow-sm': chartView === 'week'}"
+                        class="px-3 py-1 text-xs font-medium rounded-md transition">Week</button>
+                    <button @click="chartView = 'month'" :class="{'bg-white shadow-sm': chartView === 'month'}"
+                        class="px-3 py-1 text-xs font-medium rounded-md transition">Month</button>
+                    <button @click="chartView = 'year'" :class="{'bg-white shadow-sm': chartView === 'year'}"
+                        class="px-3 py-1 text-xs font-medium rounded-md transition">Year</button>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="statsChart"></canvas>
+            </div>
+        </div>
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-4 gap-2 mb-6 text-center">
@@ -94,6 +113,9 @@
                 No entries for this day
             </div>
         </div>
+        <div class="fixed bottom-2 right-2 text-xs text-gray-300 font-mono">
+            {{ appInfo.env }}:{{ appInfo.version }}
+        </div>
     </div>
 
     <script>
@@ -110,11 +132,21 @@
                     newEntry: {
                         title: '', kcal: null, protein_g: null, carbs_g: null, fat_g: null,
                         serving_amount: 1.0, confidence: 0.8, entry_time: new Date().toTimeString().substr(0, 5)
-                    }
+                    },
+                    chartView: 'week',
+                    chartInstance: null,
+                    appInfo: { version: '...', env: '...' }
                 }
             },
             mounted() {
                 this.fetchData()
+                this.fetchVersion()
+                this.updateChart()
+            },
+            watch: {
+                chartView() {
+                    this.updateChart()
+                }
             },
             methods: {
                 async fetchData() {
@@ -127,6 +159,81 @@
                     this.stats = await statsRes.json()
                     const streakData = await streakRes.json()
                     this.streak = streakData.streak
+                    this.stats = await statsRes.json()
+                    const streakData = await streakRes.json()
+                    this.streak = streakData.streak
+                    this.updateChart()
+                },
+                async updateChart() {
+                    const end = new Date()
+                    const start = new Date()
+
+                    if (this.chartView === 'week') {
+                        start.setDate(end.getDate() - 6)
+                    } else if (this.chartView === 'month') {
+                        start.setDate(end.getDate() - 29)
+                    } else if (this.chartView === 'year') {
+                        start.setFullYear(end.getFullYear() - 1)
+                    }
+
+                    const startStr = start.toISOString().split('T')[0]
+                    const endStr = end.toISOString().split('T')[0]
+
+                    const res = await fetch(`/api/stats/history?start=${startStr}&end=${endStr}`)
+                    const data = await res.json()
+
+                    this.renderChart(data, start, end)
+                },
+                renderChart(data, start, end) {
+                    const ctx = document.getElementById('statsChart')
+                    if (!ctx) return
+
+                    const statsMap = {}
+                    data.forEach(d => statsMap[d.date] = d)
+
+                    const labels = []
+                    const kcal = []
+                    const protein = []
+                    const carbs = []
+                    const fat = []
+
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        const dateStr = d.toISOString().split('T')[0]
+                        labels.push(dateStr)
+                        const dayStats = statsMap[dateStr] || { total_kcal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+
+                        kcal.push(dayStats.total_kcal)
+                        protein.push(dayStats.total_protein)
+                        carbs.push(dayStats.total_carbs)
+                        fat.push(dayStats.total_fat)
+                    }
+
+                    if (this.chartInstance) {
+                        this.chartInstance.destroy()
+                    }
+
+                    this.chartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels.map(l => l.substr(5)),
+                            datasets: [
+                                { label: 'Kcal', data: kcal, borderColor: 'rgb(22, 163, 74)', tension: 0.1, yAxisID: 'y', pointRadius: 2 },
+                                { label: 'Protein', data: protein, borderColor: 'rgb(37, 99, 235)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 },
+                                { label: 'Carbs', data: carbs, borderColor: 'rgb(202, 138, 4)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 },
+                                { label: 'Fat', data: fat, borderColor: 'rgb(220, 38, 38)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: { mode: 'index', intersect: false },
+                            stacked: false,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Kcal' } },
+                                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Grams' } }
+                            }
+                        }
+                    })
                 },
                 async addEntry() {
                     if (!this.newEntry.title) return
@@ -155,6 +262,14 @@
                 },
                 formatTime(t) {
                     return t.substr(0, 5)
+                },
+                async fetchVersion() {
+                    try {
+                        const res = await fetch('/api/info')
+                        this.appInfo = await res.json()
+                    } catch (e) {
+                        console.error(e)
+                    }
                 }
             }
         }).mount('#app')

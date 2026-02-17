@@ -18,5 +18,10 @@ RUN mkdir -p /root/.local/share/food
 # Expose the port the app runs on
 EXPOSE 8787
 
+ARG APP_VERSION=dev
+ARG APP_ENV=dev
+ENV APP_VERSION=${APP_VERSION}
+ENV APP_ENV=${APP_ENV}
+
 # Command to run the application
 CMD ["python", "-m", "cli.main", "ui", "--host", "0.0.0.0", "--port", "8787"]
