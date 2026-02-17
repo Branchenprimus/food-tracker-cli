@@ -63,6 +63,13 @@ A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatica
   ```
 
 ### Production Deployment (Raspberry Pi)
+> [!NOTE]
+> If the Docker image is **Private** on GitHub, you must log in first:
+> ```bash
+> echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+> ```
+> Alternatively, make the package **Public** in GitHub Package settings.
+
 For production deployment on a Raspberry Pi:
 
 1.  **Copy the deployment files**:
