@@ -94,57 +94,53 @@ For production deployment on a Raspberry Pi:
 
 ## Usage
 
-### CLI Commands
+### CLI Commands (via Wrapper Script)
+A wrapper script `food-tracker` is provided for easy access. If you need sudo permissions for Docker, prefix commands with `sudo`.
 
 **Add a food entry**
 ```bash
 # Basic (time defaults to now)
-python -m cli.main add --title "Banana" --kcal 105 --carbs 27 --protein 1.3 --fat 0.4
+./food-tracker add --title "Banana" --kcal 105 --carbs 27 --protein 1.3 --fat 0.4
 
 # With specific date/time and confidence score
-python -m cli.main add --title "Dinner" --kcal 600 --confidence 0.8 --date 2023-10-27 --time 19:30
+./food-tracker add --title "Dinner" --kcal 600 --confidence 0.8 --date 2023-10-27 --time 19:30
 ```
 
 **List entries**
 ```bash
 # Recent entries
-python -m cli.main list
+./food-tracker list
 
 # Filter by date range
-python -m cli.main list --from 2023-10-01 --to 2023-10-27
+./food-tracker list --from 2023-10-01 --to 2023-10-27
 ```
 
 **View Stats**
 ```bash
 # Daily summary
-python -m cli.main day
+./food-tracker day
 
 # Weekly summary (last 7 days)
-python -m cli.main week
+./food-tracker week
 ```
 
 **Edit & Delete**
 ```bash
 # Delete entry #1
-python -m cli.main rm 1
+./food-tracker rm 1
 
 # Edit entry #2 (update calories)
-python -m cli.main edit 2 --kcal 200
+./food-tracker edit 2 --kcal 200
 ```
 
 **Backup & Restore**
 ```bash
-python -m cli.main export --output backup.json
-python -m cli.main import backup.json
+# Export to a file inside the container, then copy it out if needed
+./food-tracker export --output backup.json
 ```
 
 ### Web UI
-
-Start the local web server:
-```bash
-python -m cli.main ui
-```
-Open [http://127.0.0.1:8787](http://127.0.0.1:8787) in your browser.
+The Web UI is available at [http://localhost:8787](http://localhost:8787).
 
 ## Configuration
 
