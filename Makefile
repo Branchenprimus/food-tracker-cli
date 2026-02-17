@@ -1,4 +1,7 @@
-.PHONY: deploy down logs
+.PHONY: deploy down logs dev
+
+dev:
+	docker compose up -d --build
 
 deploy:
 	docker compose -f deploy/compose.yml up -d

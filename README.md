@@ -44,7 +44,14 @@ python -m cli.main db-init
 ### GitHub Actions
 A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
 
-### Raspberry Pi (Production)
+### Local Development
+To run the application locally (building from source):
+```bash
+make dev
+```
+This builds the `Dockerfile` in the current directory and starts the container.
+
+### Production Deployment (Raspberry Pi)
 For production deployment on a Raspberry Pi:
 
 1.  **Copy the deployment files**:
