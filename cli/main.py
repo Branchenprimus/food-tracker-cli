@@ -203,6 +203,10 @@ def ui(
 ):
     """Start the Web UI server."""
     import uvicorn
+    # Ensure database is initialized
+    typer.echo("Initializing database...")
+    service.init_db()
+    
     typer.echo(f"Starting UI at http://{host}:{port}")
     uvicorn.run("web.app:app", host=host, port=port, reload=reload)
 
