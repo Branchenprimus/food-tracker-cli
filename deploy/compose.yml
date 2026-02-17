@@ -1,0 +1,22 @@
+services:
+  food-tracker:
+    image: ghcr.io/branchenprimus/food-tracker-cli:latest
+    container_name: food-tracker
+    restart: unless-stopped
+    ports:
+      - "8080:8787"
+    volumes:
+      - food-data:/root/.local/share/food
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 60 --cleanup
+
+volumes:
+  food-data:

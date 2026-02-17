@@ -58,3 +58,38 @@ class FoodService:
 
     def update_entry(self, entry_id: int, **kwargs) -> Optional[Entry]:
         return self.repo.update(entry_id, kwargs)
+
+    def get_current_streak(self) -> int:
+        # Get distinct dates with entries
+        tracked_dates = self.repo.get_tracked_dates()
+        if not tracked_dates:
+            return 0
+        
+        today = date.today()
+        # sort desc just in case, though repo does it
+        tracked_dates.sort(reverse=True)
+        
+        # Check if the streak is alive (entry today or yesterday)
+        last_entry = tracked_dates[0]
+        diff = (today - last_entry).days
+        
+        if diff > 1:
+            return 0
+            
+        # Calculate streak
+        streak = 0
+        # Start checking from the most recent entry
+        current_check = last_entry
+        
+        for d in tracked_dates:
+            if d == current_check:
+                streak += 1
+                current_check = current_check.replace(day=current_check.day - 1) if current_check.day > 1 else (current_check.replace(month=current_check.month - 1, day=28) if current_check.month > 1 else current_check.replace(year=current_check.year - 1, month=12, day=31))
+                # The above date subtraction logic is buggy/complex without timedelta. 
+                # Better to use timedelta.
+                from datetime import timedelta
+                current_check = d - timedelta(days=1)
+            else:
+                break
+                
+        return streak

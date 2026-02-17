@@ -39,6 +39,52 @@ pip install -r requirements.txt
 python -m cli.main db-init
 ```
 
+## Deployment
+
+### GitHub Actions
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
+
+### Local Development
+- **Run local code (Development)**:
+  ```bash
+  make dev
+  ```
+  Builds from your current source code. Access at [http://localhost:8787](http://localhost:8787).
+
+- **Run production image (Master)**:
+  ```bash
+  make master
+  ```
+  Pulls the latest stable image from GitHub. Used to verify what's running in production.
+
+- **Stop everything**:
+  ```bash
+  make down
+  ```
+
+### Production Deployment (Raspberry Pi)
+For production deployment on a Raspberry Pi:
+
+1.  **Copy the deployment files**:
+    - `deploy/compose.yml`
+    - `Makefile`
+
+2.  **Deploy (Start + Auto-Updates)**:
+    ```bash
+    make deploy
+    ```
+    This command starts the `food-tracker` (port 8080) and `watchtower` (auto-updates enabled).
+
+3.  **View Logs**:
+    ```bash
+    make logs
+    ```
+
+4.  **Stop**:
+    ```bash
+    make down
+    ```
+
 ## Usage
 
 ### CLI Commands

@@ -114,6 +114,18 @@ class EntryRepo:
                 )
             return None
 
+    def get_tracked_dates(self, limit: int = 365) -> List[date]:
+        query = """
+        SELECT DISTINCT date
+        FROM entries
+        ORDER BY date DESC
+        LIMIT ?
+        """
+        with get_db() as conn:
+            cursor = conn.execute(query, (limit,))
+            rows = cursor.fetchall()
+            return [datetime.strptime(row['date'], "%Y-%m-%d").date() for row in rows]
+
     def _row_to_entry(self, row: sqlite3.Row) -> Entry:
         return Entry(
             id=row['id'],
