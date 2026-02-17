@@ -114,6 +114,34 @@ class EntryRepo:
                 )
             return None
 
+    def get_daily_stats_range(self, start_date: date, end_date: date) -> List[DailyStats]:
+        query = """
+        SELECT 
+            date,
+            COUNT(*) as entry_count,
+            SUM(kcal) as total_kcal,
+            SUM(protein_g) as total_protein,
+            SUM(carbs_g) as total_carbs,
+            SUM(fat_g) as total_fat
+        FROM entries 
+        WHERE date >= ? AND date <= ?
+        GROUP BY date
+        ORDER BY date ASC
+        """
+        with get_db() as conn:
+            cursor = conn.execute(query, (start_date.isoformat(), end_date.isoformat()))
+            results = []
+            for row in cursor.fetchall():
+                results.append(DailyStats(
+                    date=datetime.strptime(row['date'], "%Y-%m-%d").date(),
+                    total_kcal=row['total_kcal'] or 0,
+                    total_protein=row['total_protein'] or 0,
+                    total_carbs=row['total_carbs'] or 0,
+                    total_fat=row['total_fat'] or 0,
+                    entry_count=row['entry_count']
+                ))
+            return results
+
     def get_tracked_dates(self, limit: int = 365) -> List[date]:
         query = """
         SELECT DISTINCT date
