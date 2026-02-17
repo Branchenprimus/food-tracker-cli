@@ -93,3 +93,7 @@ class FoodService:
                 break
                 
         return streak
+
+    def get_stats_history(self, start_date: date, end_date: date) -> List[DailyStats]:
+        """Get daily stats for a specific date range."""
+        return self.repo.get_daily_stats_range(start_date, end_date)
