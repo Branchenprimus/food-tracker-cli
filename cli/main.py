@@ -197,13 +197,14 @@ def rm(entry_id: int):
 
 @app.command()
 def ui(
+    host: str = "127.0.0.1",
     port: int = 8787,
     reload: bool = False
 ):
     """Start the Web UI server."""
     import uvicorn
-    typer.echo(f"Starting UI at http://127.0.0.1:{port}")
-    uvicorn.run("web.app:app", host="127.0.0.1", port=port, reload=reload)
+    typer.echo(f"Starting UI at http://{host}:{port}")
+    uvicorn.run("web.app:app", host=host, port=port, reload=reload)
 
 if __name__ == "__main__":
     app()

@@ -1,0 +1,14 @@
+[Unit]
+Description=Food Tracker Web UI
+After=network.target
+
+[Service]
+# User service files shouldn't specify User=
+# Assuming this runs as a user service
+ExecStart=/home/jd/projects/food-tracker-cli/venv/bin/python -m cli.main ui
+WorkingDirectory=/home/jd/projects/food-tracker-cli
+Restart=always
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

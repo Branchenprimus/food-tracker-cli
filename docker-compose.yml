@@ -1,0 +1,14 @@
+services:
+  food-tracker:
+    build: .
+    container_name: food-tracker
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - food-data:/root/.local/share/food
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  food-data:
