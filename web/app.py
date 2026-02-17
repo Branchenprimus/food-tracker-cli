@@ -52,3 +52,8 @@ def delete_entry(entry_id: int):
 @app.get("/api/stats/day", response_model=DailyStats)
 def get_daily_stats(date: Optional[date] = None):
     return service.get_daily_summary(date)
+
+@app.get("/api/stats/streak")
+def get_streak():
+    streak = service.get_current_streak()
+    return {"streak": streak}

@@ -12,7 +12,12 @@
 <body class="bg-gray-50 text-gray-900 min-h-screen">
     <div id="app" class="max-w-md mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold tracking-tight">Food Tracker</h1>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-tight">Food Tracker</h1>
+                <div v-if="streak > 0" class="flex items-center text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded-full text-sm">
+                    <span>🔥 {{ streak }}</span>
+                </div>
+            </div>
             <input type="date" v-model="currentDate" @change="fetchData" class="border rounded px-2 py-1 bg-white">
         </header>
 
@@ -88,6 +93,7 @@
                     currentDate: new Date().toISOString().split('T')[0],
                     entries: [],
                     stats: { total_kcal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 },
+                    streak: 0,
                     showAdd: false,
                     newEntry: {
                         title: '', kcal: null, protein_g: null, carbs_g: null, fat_g: null, 
@@ -100,12 +106,15 @@
             },
             methods: {
                 async fetchData() {
-                    const [entriesRes, statsRes] = await Promise.all([
+                    const [entriesRes, statsRes, streakRes] = await Promise.all([
                         fetch(`/api/entries?date=${this.currentDate}`),
-                        fetch(`/api/stats/day?date=${this.currentDate}`)
+                        fetch(`/api/stats/day?date=${this.currentDate}`),
+                        fetch('/api/stats/streak')
                     ])
                     this.entries = await entriesRes.json()
                     this.stats = await statsRes.json()
+                    const streakData = await streakRes.json()
+                    this.streak = streakData.streak
                 },
                 async addEntry() {
                     if (!this.newEntry.title) return
