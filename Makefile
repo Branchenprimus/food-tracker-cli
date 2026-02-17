@@ -1,7 +1,10 @@
-.PHONY: deploy down logs dev
+.PHONY: deploy down logs dev master
 
 dev:
 	docker compose up -d --build
+
+master:
+	docker compose -f deploy/compose.yml pull && docker compose -f deploy/compose.yml up -d
 
 deploy:
 	docker compose -f deploy/compose.yml up -d
