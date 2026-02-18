@@ -288,15 +288,21 @@ function createProgress(width, height, percent, fillColor, bgColor, radius) {
 
   // Background track
   const trackRect = new Rect(0, 0, width, height);
+  const trackPath = new Path();
+  trackPath.addRoundedRect(trackRect, r, r);
+  dc.addPath(trackPath);
   dc.setFillColor(bgColor);
-  dc.fillRoundedRect(trackRect, r, r);
+  dc.fillPath();
 
   // Fill
   const fillW = Math.max(0, Math.floor(width * p));
   if (fillW > 0) {
     const fillRect = new Rect(0, 0, fillW, height);
+    const fillPath = new Path();
+    fillPath.addRoundedRect(fillRect, r, r);
+    dc.addPath(fillPath);
     dc.setFillColor(fillColor);
-    dc.fillRoundedRect(fillRect, r, r);
+    dc.fillPath();
   }
 
   return dc.getImage();
