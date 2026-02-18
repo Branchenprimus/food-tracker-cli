@@ -6,8 +6,10 @@ dev:
 	docker compose up -d
 
 master:
-	docker compose -f deploy/compose.yml down
-	docker compose -f deploy/compose.yml pull && docker compose -f deploy/compose.yml up -d
+	docker compose -f deploy/compose.yml down --remove-orphans || true
+	-docker rm -f food-tracker watchtower
+	docker compose -f deploy/compose.yml pull
+	docker compose -f deploy/compose.yml up -d
 
 deploy:
 	docker compose -f deploy/compose.yml up -d
