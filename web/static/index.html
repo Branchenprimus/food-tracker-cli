@@ -25,7 +25,23 @@
                     <span>🔥 {{ streak }}</span>
                 </div>
             </div>
-            <input type="date" v-model="currentDate" @change="fetchData" class="border rounded px-2 py-1 bg-white">
+
+            <div class="flex items-center gap-2">
+                <button @click="changeDate(-1)" class="p-1 hover:bg-gray-200 rounded-full transition text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <input type="date" v-model="currentDate" @change="fetchData"
+                    class="border rounded px-2 py-1 bg-white text-sm">
+                <button @click="changeDate(1)" class="p-1 hover:bg-gray-200 rounded-full transition text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Chart Section -->
@@ -158,6 +174,12 @@
                 setChartView(view) {
                     this.chartView = view
                     this.updateChart()
+                },
+                changeDate(days) {
+                    const date = new Date(this.currentDate)
+                    date.setDate(date.getDate() + days)
+                    this.currentDate = date.toISOString().split('T')[0]
+                    this.fetchData()
                 },
                 async fetchData() {
                     const [entriesRes, statsRes, streakRes] = await Promise.all([
