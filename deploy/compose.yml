@@ -6,9 +6,15 @@ services:
     ports:
       - "8787:8787"
     volumes:
-      - food-data:/root/.local/share/food
+      # Map the local data directory to /app/data inside the container
+      # Assuming the workdir is /app or similar, we map to where the code expects it based on env vars
+      # Default env var is "data/app.db" relative to running dir.
+      - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+      # Explicitly set paths for clarity (optional as defaults match, but good practice)
+      - FOOD_TRACKER_DB=data/app.db
+      - FOOD_TRACKER_CACHE=data/widget_cache.json
 
   watchtower:
     image: containrrr/watchtower
@@ -17,6 +23,3 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 60 --cleanup
-
-volumes:
-  food-data:
