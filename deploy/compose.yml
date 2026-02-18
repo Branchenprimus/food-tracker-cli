@@ -15,6 +15,7 @@ services:
       # Explicitly set paths for clarity (optional as defaults match, but good practice)
       - FOOD_TRACKER_DB=data/app.db
       - FOOD_TRACKER_CACHE=data/widget_cache.json
+      - WIDGET_API_TOKEN=${WIDGET_API_TOKEN}
 
   watchtower:
     image: containrrr/watchtower
