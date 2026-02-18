@@ -157,3 +157,4 @@ All commands support a `--json` flag to output structured JSON data instead of f
 ```bash
 python -m cli.main list --json
 ```
+test
