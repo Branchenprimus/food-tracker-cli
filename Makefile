@@ -6,14 +6,13 @@ dev:
 	docker compose up -d
 
 master:
-	docker compose down
+	docker compose -f deploy/compose.yml down
 	docker compose -f deploy/compose.yml pull && docker compose -f deploy/compose.yml up -d
 
 deploy:
 	docker compose -f deploy/compose.yml up -d
 
 down:
-	docker compose down
 	docker compose -f deploy/compose.yml down
 
 logs:
