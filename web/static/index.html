@@ -33,11 +33,13 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-gray-700">Trends</h2>
                 <div class="flex bg-gray-100 rounded-lg p-1">
-                    <button @click="chartView = 'week'" :class="{'bg-white shadow-sm': chartView === 'week'}"
+                    <button @click="setChartView('day')" :class="{'bg-white shadow-sm': chartView === 'day'}"
+                        class="px-3 py-1 text-xs font-medium rounded-md transition">Day</button>
+                    <button @click="setChartView('week')" :class="{'bg-white shadow-sm': chartView === 'week'}"
                         class="px-3 py-1 text-xs font-medium rounded-md transition">Week</button>
-                    <button @click="chartView = 'month'" :class="{'bg-white shadow-sm': chartView === 'month'}"
+                    <button @click="setChartView('month')" :class="{'bg-white shadow-sm': chartView === 'month'}"
                         class="px-3 py-1 text-xs font-medium rounded-md transition">Month</button>
-                    <button @click="chartView = 'year'" :class="{'bg-white shadow-sm': chartView === 'year'}"
+                    <button @click="setChartView('year')" :class="{'bg-white shadow-sm': chartView === 'year'}"
                         class="px-3 py-1 text-xs font-medium rounded-md transition">Year</button>
                 </div>
             </div>
@@ -135,21 +137,28 @@
                         serving_amount: 1.0, confidence: 0.8, entry_time: new Date().toTimeString().substr(0, 5)
                     },
                     chartView: 'week',
-                    chartInstance: null,
-                    appInfo: { version: '...', env: '...' }
+                    appInfo: { version: '...', env: '...' },
+                    lastChartUpdate: 0
                 }
+            },
+            created() {
+                this.chartInstance = null
             },
             mounted() {
                 this.fetchData()
                 this.fetchVersion()
-                this.updateChart()
-            },
-            watch: {
-                chartView() {
-                    this.updateChart()
-                }
             },
             methods: {
+                // Helper to get local date string YYYY-MM-DD
+                toLocalISO(date) {
+                    const offset = date.getTimezoneOffset()
+                    const local = new Date(date.getTime() - (offset * 60 * 1000))
+                    return local.toISOString().split('T')[0]
+                },
+                setChartView(view) {
+                    this.chartView = view
+                    this.updateChart()
+                },
                 async fetchData() {
                     const [entriesRes, statsRes, streakRes] = await Promise.all([
                         fetch(`/api/entries?date=${this.currentDate}`),
@@ -163,8 +172,26 @@
                     this.updateChart()
                 },
                 async updateChart() {
+                    const timestamp = Date.now()
+                    this.lastChartUpdate = timestamp
+
                     const end = new Date()
                     const start = new Date()
+
+                    let data = []
+                    let labels = []
+
+                    if (this.chartView === 'day') {
+                        // For day view, we use the already fetched entries
+                        // Sort entries by time
+                        const sortedEntries = [...this.entries].sort((a, b) => a.entry_time.localeCompare(b.entry_time))
+
+                        // We need to shape this data for the chart
+                        // We will just pass the raw entries to renderChart and handle it there
+                        // But we want to simulate the same structure if possible or handle it explicitly
+                        this.renderChart(sortedEntries, null, null, 'day')
+                        return
+                    }
 
                     if (this.chartView === 'week') {
                         start.setDate(end.getDate() - 6)
@@ -174,36 +201,57 @@
                         start.setFullYear(end.getFullYear() - 1)
                     }
 
-                    const startStr = start.toISOString().split('T')[0]
-                    const endStr = end.toISOString().split('T')[0]
+                    const startStr = this.toLocalISO(start)
+                    const endStr = this.toLocalISO(end)
 
                     const res = await fetch(`/api/stats/history?start=${startStr}&end=${endStr}`)
-                    const data = await res.json()
+                    data = await res.json()
 
-                    this.renderChart(data, start, end)
+                    // Check race condition
+                    if (this.lastChartUpdate !== timestamp) {
+                        console.log('Ignoring stale chart update')
+                        return
+                    }
+
+                    this.renderChart(data, start, end, this.chartView)
                 },
-                renderChart(data, start, end) {
+                renderChart(data, start, end, mode) {
                     const ctx = document.getElementById('statsChart')
                     if (!ctx) return
 
-                    const statsMap = {}
-                    data.forEach(d => statsMap[d.date] = d)
+                    let labels = []
+                    let kcal = []
+                    let protein = []
+                    let carbs = []
+                    let fat = []
 
-                    const labels = []
-                    const kcal = []
-                    const protein = []
-                    const carbs = []
-                    const fat = []
+                    if (mode === 'day') {
+                        // Data is list of entries
+                        data.forEach(entry => {
+                            labels.push(entry.entry_time.substr(0, 5)) // HH:MM
+                            kcal.push(entry.kcal)
+                            protein.push(entry.protein_g)
+                            carbs.push(entry.carbs_g)
+                            fat.push(entry.fat_g)
+                        })
+                    } else {
+                        const statsMap = {}
+                        data.forEach(d => statsMap[d.date] = d)
 
-                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                        const dateStr = d.toISOString().split('T')[0]
-                        labels.push(dateStr)
-                        const dayStats = statsMap[dateStr] || { total_kcal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                            const dateStr = this.toLocalISO(d)
+                            // Format label as DD.MM.
+                            const day = dateStr.split('-')[2]
+                            const month = dateStr.split('-')[1]
+                            labels.push(`${day}.${month}.`)
 
-                        kcal.push(dayStats.total_kcal)
-                        protein.push(dayStats.total_protein)
-                        carbs.push(dayStats.total_carbs)
-                        fat.push(dayStats.total_fat)
+                            const dayStats = statsMap[dateStr] || { total_kcal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+
+                            kcal.push(dayStats.total_kcal)
+                            protein.push(dayStats.total_protein)
+                            carbs.push(dayStats.total_carbs)
+                            fat.push(dayStats.total_fat)
+                        }
                     }
 
                     if (this.chartInstance) {
@@ -211,20 +259,20 @@
                     }
 
                     this.chartInstance = new Chart(ctx, {
-                        type: 'line',
+                        type: mode === 'day' ? 'bar' : 'line',
                         data: {
-                            labels: labels.map(l => l.substr(5)),
+                            labels: labels,
                             datasets: [
-                                { label: 'Kcal', data: kcal, borderColor: 'rgb(22, 163, 74)', tension: 0.1, yAxisID: 'y', pointRadius: 2 },
-                                { label: 'Protein', data: protein, borderColor: 'rgb(37, 99, 235)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 },
-                                { label: 'Carbs', data: carbs, borderColor: 'rgb(202, 138, 4)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 },
-                                { label: 'Fat', data: fat, borderColor: 'rgb(220, 38, 38)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 }
+                                { label: 'Kcal', data: kcal, borderColor: 'rgb(22, 163, 74)', backgroundColor: 'rgba(22, 163, 74, 0.5)', tension: 0.1, yAxisID: 'y', pointRadius: mode === 'day' ? 0 : 2 },
+                                { label: 'Protein', data: protein, borderColor: 'rgb(37, 99, 235)', backgroundColor: 'rgba(37, 99, 235, 0.5)', tension: 0.1, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
+                                { label: 'Carbs', data: carbs, borderColor: 'rgb(202, 138, 4)', backgroundColor: 'rgba(202, 138, 4, 0.5)', tension: 0.1, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
+                                { label: 'Fat', data: fat, borderColor: 'rgb(220, 38, 38)', backgroundColor: 'rgba(220, 38, 38, 0.5)', tension: 0.1, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 }
                             ]
                         },
                         options: {
                             responsive: true,
                             interaction: { mode: 'index', intersect: false },
-                            stacked: false,
+                            stacked: mode === 'day', // Stack bars for day view
                             maintainAspectRatio: false,
                             scales: {
                                 y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Kcal' } },
