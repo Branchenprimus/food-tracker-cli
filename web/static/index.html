@@ -142,7 +142,6 @@
             mounted() {
                 this.fetchData()
                 this.fetchVersion()
-                this.updateChart()
             },
             watch: {
                 chartView() {
@@ -150,6 +149,12 @@
                 }
             },
             methods: {
+                // Helper to get local date string YYYY-MM-DD
+                toLocalISO(date) {
+                    const offset = date.getTimezoneOffset()
+                    const local = new Date(date.getTime() - (offset * 60 * 1000))
+                    return local.toISOString().split('T')[0]
+                },
                 async fetchData() {
                     const [entriesRes, statsRes, streakRes] = await Promise.all([
                         fetch(`/api/entries?date=${this.currentDate}`),
@@ -174,8 +179,8 @@
                         start.setFullYear(end.getFullYear() - 1)
                     }
 
-                    const startStr = start.toISOString().split('T')[0]
-                    const endStr = end.toISOString().split('T')[0]
+                    const startStr = this.toLocalISO(start)
+                    const endStr = this.toLocalISO(end)
 
                     const res = await fetch(`/api/stats/history?start=${startStr}&end=${endStr}`)
                     const data = await res.json()
@@ -196,8 +201,12 @@
                     const fat = []
 
                     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                        const dateStr = d.toISOString().split('T')[0]
-                        labels.push(dateStr)
+                        const dateStr = this.toLocalISO(d)
+                        // Format label as DD.MM.
+                        const day = dateStr.split('-')[2]
+                        const month = dateStr.split('-')[1]
+                        labels.push(`${day}.${month}.`)
+                        
                         const dayStats = statsMap[dateStr] || { total_kcal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
 
                         kcal.push(dayStats.total_kcal)
@@ -213,7 +222,7 @@
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: labels.map(l => l.substr(5)),
+                            labels: labels,
                             datasets: [
                                 { label: 'Kcal', data: kcal, borderColor: 'rgb(22, 163, 74)', tension: 0.1, yAxisID: 'y', pointRadius: 2 },
                                 { label: 'Protein', data: protein, borderColor: 'rgb(37, 99, 235)', tension: 0.1, yAxisID: 'y1', pointRadius: 2 },
