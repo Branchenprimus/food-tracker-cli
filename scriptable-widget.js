@@ -288,15 +288,21 @@ function createProgress(width, height, percent, fillColor, bgColor, radius) {
 
   // Background track
   const trackRect = new Rect(0, 0, width, height);
+  const trackPath = new Path();
+  trackPath.addRoundedRect(trackRect, r, r);
+  dc.addPath(trackPath);
   dc.setFillColor(bgColor);
-  dc.fillRoundedRect(trackRect, r, r);
+  dc.fillPath();
 
   // Fill
   const fillW = Math.max(0, Math.floor(width * p));
   if (fillW > 0) {
     const fillRect = new Rect(0, 0, fillW, height);
+    const fillPath = new Path();
+    fillPath.addRoundedRect(fillRect, r, r);
+    dc.addPath(fillPath);
     dc.setFillColor(fillColor);
-    dc.fillRoundedRect(fillRect, r, r);
+    dc.fillPath();
   }
 
   return dc.getImage();
@@ -330,32 +336,34 @@ async function buildWidget(data, meta) {
   left.layoutVertically();
 
   const dateLabel = left.addText("Today");
-  dateLabel.font = Font.roundedSystemFont(12);
+  dateLabel.font = Font.systemFont(12);
   dateLabel.textColor = CONFIG.colors.mutedText;
 
   const dateText = left.addText(isoDateToDisplay(data.day?.date));
-  dateText.font = Font.roundedSystemFont(16);
+  dateText.font = Font.semiboldSystemFont(16);
   dateText.textColor = CONFIG.colors.text;
 
   header.addSpacer();
 
   const right = header.addStack();
   right.layoutVertically();
-  right.rightAlignContent();
+  // right.rightAlignContent(); // Removing unsupported call
 
   const streak = Number(data.streak ?? 0);
   const streakText = right.addText(`🔥 ${fmtInt(streak)}`);
-  streakText.font = Font.roundedSystemFont(14);
+  streakText.font = Font.semiboldSystemFont(14);
   streakText.textColor = CONFIG.colors.text;
+  streakText.rightAlignText();
 
   // Stale indicator
   if (meta.isStale) {
     const staleRow = right.addStack();
     staleRow.layoutHorizontally();
-    staleRow.rightAlignContent();
+    // staleRow.rightAlignContent(); // Removing unsupported call
+    staleRow.addSpacer(); // Add spacer to align text to right
 
     const warn = staleRow.addText("⚠︎ stale");
-    warn.font = Font.roundedSystemFont(11);
+    warn.font = Font.boldSystemFont(11);
     warn.textColor = CONFIG.colors.stale;
   }
 
@@ -374,15 +382,15 @@ async function buildWidget(data, meta) {
   kcalLeft.layoutVertically();
 
   const kcalLabel = kcalLeft.addText("Calories");
-  kcalLabel.font = Font.roundedSystemFont(12);
+  kcalLabel.font = Font.systemFont(12);
   kcalLabel.textColor = CONFIG.colors.mutedText;
 
   const kcalBig = kcalLeft.addText(`${fmtInt(kcalValue)}`);
-  kcalBig.font = Font.roundedSystemFont(34);
+  kcalBig.font = Font.boldSystemFont(34);
   kcalBig.textColor = CONFIG.colors.text;
 
   const kcalSub = kcalLeft.addText(`${fmtInt(kcalTarget)} target • ${fmtInt(data.day?.entry_count ?? 0)} entries`);
-  kcalSub.font = Font.roundedSystemFont(11);
+  kcalSub.font = Font.systemFont(11);
   kcalSub.textColor = CONFIG.colors.mutedText;
 
   kcalRow.addSpacer();
@@ -390,10 +398,11 @@ async function buildWidget(data, meta) {
   // Optional: show percent
   const pctBox = kcalRow.addStack();
   pctBox.layoutVertically();
-  pctBox.rightAlignContent();
+  // pctBox.rightAlignContent(); // Removing unsupported call
   const pctText = pctBox.addText(`${fmtInt(clamp01(kcalPct) * 100)}%`);
-  pctText.font = Font.roundedSystemFont(14);
+  pctText.font = Font.semiboldSystemFont(14);
   pctText.textColor = CONFIG.colors.text;
+  pctText.rightAlignText();
 
   card.addSpacer(8);
 
@@ -416,14 +425,14 @@ async function buildWidget(data, meta) {
   const macroTitleRow = card.addStack();
   macroTitleRow.layoutHorizontally();
   const macroTitle = macroTitleRow.addText("Macros");
-  macroTitle.font = Font.roundedSystemFont(12);
+  macroTitle.font = Font.semiboldSystemFont(12);
   macroTitle.textColor = CONFIG.colors.mutedText;
 
   macroTitleRow.addSpacer();
 
   // Week + streak small info
   const weekInfo = macroTitleRow.addText(`Week: ${fmtInt(data.week?.total_kcal ?? 0)} kcal • ${fmtInt(data.week?.days_tracked ?? 0)} days`);
-  weekInfo.font = Font.roundedSystemFont(11);
+  weekInfo.font = Font.systemFont(11);
   weekInfo.textColor = CONFIG.colors.mutedText;
 
   card.addSpacer(10);
@@ -466,11 +475,11 @@ async function buildWidget(data, meta) {
     leftCol.size = new Size(0, 0);
 
     const lbl = leftCol.addText(m.label);
-    lbl.font = Font.roundedSystemFont(13);
+    lbl.font = Font.systemFont(13);
     lbl.textColor = CONFIG.colors.text;
 
     const val = leftCol.addText(`${fmt1(m.value)}g / ${fmt1(m.target)}g`);
-    val.font = Font.roundedSystemFont(11);
+    val.font = Font.systemFont(11);
     val.textColor = CONFIG.colors.mutedText;
 
     row.addSpacer();
@@ -505,7 +514,7 @@ async function buildWidget(data, meta) {
       ? `Using cached data • fetched ${new Date(data.__cached_fetched_at).toLocaleTimeString()}`
       : "Using cached data";
     const t = foot.addText(staleText);
-    t.font = Font.roundedSystemFont(10);
+    t.font = Font.italicSystemFont(10);
     t.textColor = CONFIG.colors.stale;
 
     foot.addSpacer();
@@ -514,7 +523,7 @@ async function buildWidget(data, meta) {
   if (data.__error) {
     card.addSpacer(6);
     const err = card.addText(String(data.__error));
-    err.font = Font.roundedSystemFont(10);
+    err.font = Font.italicSystemFont(10);
     err.textColor = CONFIG.colors.stale;
   }
 
