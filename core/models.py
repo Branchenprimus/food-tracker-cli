@@ -12,7 +12,7 @@ class Entry(BaseModel):
     protein_g: float = Field(ge=0)
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence score 0.0-1.0")
     
-    entry_date: date = Field(..., description="YYYY-MM-DD")
+    entry_date: date = Field(..., description="DD.MM.YYYY")
     entry_time: time = Field(..., description="HH:MM")
     
     @property

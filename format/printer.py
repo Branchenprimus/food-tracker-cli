@@ -3,6 +3,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 from core.models import Entry, DailyStats
+from config.config import DATE_FORMAT, TIME_FORMAT
 
 console = Console()
 
@@ -26,8 +27,8 @@ def print_entries(entries: List[Entry], title: str = "Food Entries"):
     for entry in entries:
         table.add_row(
             str(entry.id),
-            entry.entry_date.isoformat(),
-            entry.entry_time.strftime("%H:%M"),
+            entry.entry_date.strftime(DATE_FORMAT),
+            entry.entry_time.strftime(TIME_FORMAT),
             entry.title,
             f"{entry.serving_amount:.1f}",
             f"{entry.kcal:.0f}",
@@ -40,7 +41,7 @@ def print_entries(entries: List[Entry], title: str = "Food Entries"):
     console.print(table)
 
 def print_daily_stats(stats: DailyStats):
-    table = Table(title=f"Daily Summary: {stats.date}", box=box.SIMPLE)
+    table = Table(title=f"Daily Summary: {stats.date.strftime(DATE_FORMAT)}", box=box.SIMPLE)
     table.add_column("Metric", style="bold")
     table.add_column("Value", justify="right")
 
