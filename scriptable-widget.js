@@ -341,18 +341,20 @@ async function buildWidget(data, meta) {
 
   const right = header.addStack();
   right.layoutVertically();
-  right.rightAlignContent();
+  // right.rightAlignContent(); // Removing unsupported call
 
   const streak = Number(data.streak ?? 0);
   const streakText = right.addText(`🔥 ${fmtInt(streak)}`);
   streakText.font = Font.semiboldSystemFont(14);
   streakText.textColor = CONFIG.colors.text;
+  streakText.rightAlignText();
 
   // Stale indicator
   if (meta.isStale) {
     const staleRow = right.addStack();
     staleRow.layoutHorizontally();
-    staleRow.rightAlignContent();
+    // staleRow.rightAlignContent(); // Removing unsupported call
+    staleRow.addSpacer(); // Add spacer to align text to right
 
     const warn = staleRow.addText("⚠︎ stale");
     warn.font = Font.boldSystemFont(11);
@@ -390,10 +392,11 @@ async function buildWidget(data, meta) {
   // Optional: show percent
   const pctBox = kcalRow.addStack();
   pctBox.layoutVertically();
-  pctBox.rightAlignContent();
+  // pctBox.rightAlignContent(); // Removing unsupported call
   const pctText = pctBox.addText(`${fmtInt(clamp01(kcalPct) * 100)}%`);
   pctText.font = Font.semiboldSystemFont(14);
   pctText.textColor = CONFIG.colors.text;
+  pctText.rightAlignText();
 
   card.addSpacer(8);
 
