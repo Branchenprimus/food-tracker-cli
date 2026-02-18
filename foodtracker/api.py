@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException
 import os
+import json
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Header
 from typing import Optional, List, Dict, Any
 from datetime import date
 from foodtracker.service import FoodService
