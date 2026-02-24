@@ -1,6 +1,3 @@
-Hier ist der fertige Inhalt für deine **`hosting.md`**. Du kannst diesen Text einfach in eine neue Datei kopieren und sie direkt neben deiner `docker-compose.yml` auf dem Raspberry Pi speichern.
-
-
 # 🚀 Hosting & Infrastructure: Kcal-Tracker
 
 Diese Dokumentation beschreibt das Cloud-Hosting-Setup für den Kcal-Tracker auf dem Raspberry Pi 5.
