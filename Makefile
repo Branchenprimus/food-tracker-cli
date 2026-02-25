@@ -17,6 +17,7 @@ deploy:
 dev:
 	$(DEV_COMPOSE) build --build-arg APP_VERSION=$(APP_VERSION) --build-arg APP_COMMIT=$(APP_COMMIT) --build-arg APP_ENV=dev --build-arg APP_GIT_REF=$(APP_GIT_REF)
 	$(DEV_COMPOSE) up -d --remove-orphans
+	$(DEV_COMPOSE) exec -T food-tracker python -m cli.main seed-mock --if-empty
 	@echo "Dev instance available at:"
 	@echo "$(DEV_URL)"
 
