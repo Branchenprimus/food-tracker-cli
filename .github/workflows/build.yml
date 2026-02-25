@@ -39,3 +39,7 @@ jobs:
           tags: |
             ghcr.io/branchenprimus/food-tracker-cli:latest
             ghcr.io/branchenprimus/food-tracker-cli:${{ github.sha }}
+          build-args: |
+            APP_VERSION=latest
+            APP_COMMIT=${{ github.sha }}
+            APP_ENV=prod

@@ -14,12 +14,16 @@ service = FoodService()
 
 CMD_VERSION = os.getenv("APP_VERSION", "dev")
 CMD_ENV = os.getenv("APP_ENV", "dev")
+CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 
 @app.get("/api/info")
 def get_info():
+    short_commit = CMD_COMMIT[:7] if CMD_COMMIT and CMD_COMMIT != "unknown" else CMD_COMMIT
     return {
         "version": CMD_VERSION,
-        "env": CMD_ENV
+        "env": CMD_ENV,
+        "commit": CMD_COMMIT,
+        "display_version": f"{CMD_VERSION}@{short_commit}" if short_commit else CMD_VERSION
     }
 
 # Serve static files

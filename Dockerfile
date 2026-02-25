@@ -19,8 +19,10 @@ RUN mkdir -p /root/.local/share/food
 EXPOSE 8787
 
 ARG APP_VERSION=dev
+ARG APP_COMMIT=unknown
 ARG APP_ENV=dev
 ENV APP_VERSION=${APP_VERSION}
+ENV APP_COMMIT=${APP_COMMIT}
 ENV APP_ENV=${APP_ENV}
 
 # Command to run the application

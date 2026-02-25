@@ -58,4 +58,5 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
+            APP_COMMIT=${{ github.sha }}
             APP_ENV=${{ github.ref_name == 'master' && 'prod' || 'dev' }}
