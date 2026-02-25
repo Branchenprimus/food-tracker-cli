@@ -12,4 +12,4 @@ fi
 # We use -T to disable pseudo-tty allocation if needed, but for interactive use we usually want it.
 # However, for agents/scripts, strictly speaking we might not need a TTY.
 # Let's keep it simple: exec passing all args.
-docker compose exec food-tracker python -m cli.main "$@"
+docker compose --env-file .env -f deploy/compose.yml exec food-tracker python -m cli.main "$@"

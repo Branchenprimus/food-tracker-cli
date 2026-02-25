@@ -62,3 +62,4 @@ coverage.xml
 
 # User specific
 test_dump.json
+widget_cache.json
