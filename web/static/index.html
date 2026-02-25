@@ -388,6 +388,10 @@
                                 weight_loss_per_week_kg: Number(this.goalSettings.weightLossPerWeekKg)
                             })
                         })
+                        // Never keep one-time API key visible after leaving settings.
+                        this.generatedApiKey = ''
+                        this.copySuccess = false
+                        this.apiKeyError = ''
                         this.showSettings = false
                     } catch (e) {
                         console.error(e)
