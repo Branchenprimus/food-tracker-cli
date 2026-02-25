@@ -167,6 +167,16 @@ food-tracker-client list --limit 5
 food-tracker-client delete 123
 ```
 
+PyPI release automation:
+- Workflow: `.github/workflows/pypi-publish.yml`
+- Trigger: push tag `v*` (for example `v2.1.0`)
+- Auth: PyPI Trusted Publisher (OIDC), no PyPI token required.
+- Configure on PyPI project:
+  - Owner: `Branchenprimus`
+  - Repository: `food-tracker-cli`
+  - Workflow: `pypi-publish.yml`
+  - Environment: `pypi`
+
 ### Web UI
 The Web UI is available at:
 - Deploy: [http://localhost:8787](http://localhost:8787)
