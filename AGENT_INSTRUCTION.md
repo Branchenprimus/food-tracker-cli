@@ -72,5 +72,7 @@ The local Typer CLI in `cli/main.py` exists for local admin/dev operations (`ini
 It writes via service/db internals and is not the recommended auth boundary for agent integrations.
 
 Wrapper behavior:
-- `./food-tracker add/list/delete` uses authenticated `/api/*` calls when `FOOD_TRACKER_API_KEY` is set.
+- `./food-tracker add/list/delete` requires `FOOD_TRACKER_API_KEY` and uses authenticated `/api/*` calls.
 - This ensures entries are stored under the API key user and visible in that user's UI.
+- Direct `python -m cli.main add/list/delete` is blocked by default.
+- Emergency override (maintenance only): set `ALLOW_DIRECT_DB_CLI=1`.

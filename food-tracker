@@ -58,6 +58,14 @@ fi
 cmd="$1"
 shift
 
+# Enforce key-based flow for data operations.
+if [[ "$cmd" == "add" || "$cmd" == "list" || "$cmd" == "delete" ]]; then
+    if [[ -z "$API_KEY" ]]; then
+        echo "Error: $cmd requires FOOD_TRACKER_API_KEY (key-authenticated API flow)." >&2
+        exit 1
+    fi
+fi
+
 # If key is present, use authenticated API flow for agent-relevant data ops.
 if [[ -n "$API_KEY" ]]; then
     case "$cmd" in
