@@ -3,6 +3,8 @@ services:
     image: ghcr.io/branchenprimus/food-tracker-cli:latest
     container_name: food-tracker
     restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     ports:
       - "8787:8787"
     volumes:
@@ -23,4 +25,6 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 60 --cleanup
+    environment:
+      - DOCKER_API_VERSION=1.44
+    command: --interval 60 --cleanup --label-enable

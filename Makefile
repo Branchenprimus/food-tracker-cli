@@ -7,6 +7,7 @@ DEV_URL = http://localhost:8686
 APP_VERSION = $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 deploy:
+	$(DEPLOY_COMPOSE) pull
 	$(DEPLOY_COMPOSE) up -d
 	@echo "Deploy instance available at:"
 	@echo "$(DEPLOY_URL)"

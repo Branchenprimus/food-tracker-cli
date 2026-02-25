@@ -78,7 +78,8 @@ For production deployment on a Raspberry Pi:
     ```bash
     make deploy
     ```
-    This command starts the persistent `food-tracker` on port `8787` and `watchtower` (auto-updates enabled).
+    This command pulls the latest image, then starts the persistent `food-tracker` on port `8787` plus `watchtower`.
+    After initial deployment, watchtower keeps the deploy container on the newest `latest` image automatically.
 
 3.  **View Logs**:
     ```bash
