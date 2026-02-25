@@ -143,6 +143,30 @@ python -m cli.main ui --host 0.0.0.0 --port 8787
 python -m cli.main seed-mock --if-empty
 ```
 
+### Standalone Client (pipx)
+
+For OpenClaw users who should not clone this repo, install the API client via pipx:
+
+```bash
+pipx install "git+https://github.com/Branchenprimus/food-tracker-cli.git"
+```
+
+Then configure key + endpoint:
+
+```bash
+export FOOD_TRACKER_API_KEY='ftk_...'
+export FOOD_TRACKER_API_BASE='https://kcal-tracker.darwin-labs.org'
+```
+
+Use:
+
+```bash
+food-tracker-client me
+food-tracker-client add "Cheeseburger" 650 28 52 35
+food-tracker-client list --limit 5
+food-tracker-client delete 123
+```
+
 ### Web UI
 The Web UI is available at:
 - Deploy: [http://localhost:8787](http://localhost:8787)
@@ -170,3 +194,8 @@ For external agents, prefer HTTP API calls instead of direct local CLI DB writes
 Notes:
 - One API key per user is enforced. Generating a new key revokes/removes old keys.
 - In `dev`, requests without API key can still resolve to `DEV_USER_EMAIL` fallback.
+
+Security notes:
+- Never commit API keys to git or paste them into shared logs.
+- Prefer Cloudflare URL (`https`) over plain HTTP endpoints.
+- Rotate keys if exposed; old key is revoked when a new one is generated.

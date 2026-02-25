@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "food-tracker-client"
+version = "0.1.0"
+description = "API-key based CLI client for Food Tracker"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Food Tracker" }
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Branchenprimus/food-tracker-cli"
+
+[project.scripts]
+food-tracker-client = "foodtracker_client.cli:main"
+
+[tool.setuptools]
+packages = ["foodtracker_client"]
