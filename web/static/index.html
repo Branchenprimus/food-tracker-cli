@@ -29,6 +29,10 @@
             </div>
 
             <div class="flex items-center gap-2">
+                <button @click="showSettings = true"
+                    class="px-2 py-1 text-xs font-medium border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition">
+                    Goals
+                </button>
                 <button @click="changeDate(-1)" class="p-1 hover:bg-gray-200 rounded-full transition text-gray-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -71,18 +75,57 @@
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Kcal</div>
                 <div class="text-lg font-bold text-green-600">{{ Math.round(stats.total_kcal) }}</div>
+                <div v-if="goalSettings.enabled && goals.kcal > 0" class="text-[10px] text-gray-500 mt-1">
+                    Goal {{ Math.round(goals.kcal) }} ({{ goalPercent(stats.total_kcal, goals.kcal) }}%)
+                </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Prot</div>
                 <div class="text-lg font-bold text-blue-600">{{ stats.total_protein.toFixed(1) }}</div>
+                <div v-if="goalSettings.enabled && goals.protein > 0" class="text-[10px] text-gray-500 mt-1">
+                    Goal {{ goals.protein.toFixed(1) }} ({{ goalPercent(stats.total_protein, goals.protein) }}%)
+                </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Carb</div>
                 <div class="text-lg font-bold text-yellow-600">{{ stats.total_carbs.toFixed(1) }}</div>
+                <div v-if="goalSettings.enabled && goals.carbs > 0" class="text-[10px] text-gray-500 mt-1">
+                    Goal {{ goals.carbs.toFixed(1) }} ({{ goalPercent(stats.total_carbs, goals.carbs) }}%)
+                </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Fat</div>
                 <div class="text-lg font-bold text-red-600">{{ stats.total_fat.toFixed(1) }}</div>
+                <div v-if="goalSettings.enabled && goals.fat > 0" class="text-[10px] text-gray-500 mt-1">
+                    Goal {{ goals.fat.toFixed(1) }} ({{ goalPercent(stats.total_fat, goals.fat) }}%)
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showSettings" class="fixed inset-0 bg-black/30 flex items-center justify-center z-20 px-4">
+            <div class="bg-white w-full max-w-sm rounded-xl p-4 shadow-xl border border-gray-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-800">Goal Settings</h3>
+                    <button @click="showSettings = false" class="text-gray-500 hover:text-black text-sm">Close</button>
+                </div>
+                <label class="flex items-center gap-2 mb-3 text-sm">
+                    <input type="checkbox" v-model="goalSettings.enabled">
+                    Enable weight-based macro goals
+                </label>
+                <div class="mb-3">
+                    <label class="text-xs text-gray-500 uppercase font-medium">Body Weight (kg)</label>
+                    <input type="number" min="30" max="300" step="0.1" v-model.number="goalSettings.bodyWeightKg"
+                        class="w-full mt-1 border rounded px-3 py-2">
+                </div>
+                <div class="text-xs text-gray-500 mb-4">
+                    Formula: kcal=(34x-300), protein=2.2x g, fat=0.8x g, carbs=(18x-300)/4 g
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button @click="showSettings = false"
+                        class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm">Cancel</button>
+                    <button @click="saveGoalSettings"
+                        class="px-3 py-2 rounded-lg bg-black text-white text-sm">Save</button>
+                </div>
             </div>
         </div>
 
@@ -193,7 +236,10 @@
                     appInfo: { version: '...', env: '...', gitRef: '...', commit: '', displayVersion: '...', commitUrl: '', refUrl: '' },
                     lastChartUpdate: 0,
                     editingEntryId: null,
-                    editEntry: null
+                    editEntry: null,
+                    showSettings: false,
+                    goalSettings: { enabled: false, bodyWeightKg: null },
+                    goals: { kcal: 0, protein: 0, carbs: 0, fat: 0 }
                 }
             },
             created() {
@@ -202,6 +248,7 @@
             mounted() {
                 this.fetchData()
                 this.fetchVersion()
+                this.loadGoalSettings()
             },
             methods: {
                 // Helper to get local date string YYYY-MM-DD
@@ -220,6 +267,39 @@
                     this.currentDate = date.toISOString().split('T')[0]
                     this.cancelEdit()
                     this.fetchData()
+                },
+                loadGoalSettings() {
+                    try {
+                        const raw = localStorage.getItem('foodTrackerGoalSettings')
+                        if (!raw) return
+                        const parsed = JSON.parse(raw)
+                        this.goalSettings.enabled = Boolean(parsed.enabled)
+                        this.goalSettings.bodyWeightKg = parsed.bodyWeightKg ? Number(parsed.bodyWeightKg) : null
+                        this.recalculateGoals()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                recalculateGoals() {
+                    const x = Number(this.goalSettings.bodyWeightKg)
+                    if (!x || x <= 0) {
+                        this.goals = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+                        return
+                    }
+                    const kcal = Math.max(0, (34 * x) - 300)
+                    const protein = 2.2 * x
+                    const fat = 0.8 * x
+                    const carbs = Math.max(0, ((18 * x) - 300) / 4)
+                    this.goals = { kcal, protein, carbs, fat }
+                },
+                saveGoalSettings() {
+                    this.recalculateGoals()
+                    localStorage.setItem('foodTrackerGoalSettings', JSON.stringify(this.goalSettings))
+                    this.showSettings = false
+                },
+                goalPercent(current, target) {
+                    if (!target || target <= 0) return 0
+                    return Math.round((Number(current) / Number(target)) * 100)
                 },
                 async fetchData() {
                     const [entriesRes, statsRes, streakRes] = await Promise.all([
