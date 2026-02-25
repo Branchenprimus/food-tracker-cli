@@ -182,14 +182,20 @@
             <div v-for="entry in entries" :key="entry.id"
                 class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-start gap-3">
-                    <div>
-                        <div class="font-medium">{{ entry.title }}</div>
-                        <div class="text-xs text-gray-500 mt-1 flex gap-2">
-                            <span>{{ formatTime(entry.entry_time) }}</span>
-                            <span class="text-green-600">{{ Math.round(entry.kcal) }} kcal</span>
-                            <span class="text-blue-600">{{ entry.protein_g }}p</span>
-                            <span class="text-yellow-600">{{ entry.carbs_g }}c</span>
-                            <span class="text-red-600">{{ entry.fat_g }}f</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="grid grid-cols-5 gap-2 text-xs font-semibold">
+                            <span class="text-gray-800">{{ formatTime(entry.entry_time) }}</span>
+                            <span class="text-green-600">{{ Math.round(entry.kcal) }}</span>
+                            <span class="text-blue-600">{{ entry.protein_g.toFixed(1) }}</span>
+                            <span class="text-yellow-600">{{ entry.carbs_g.toFixed(1) }}</span>
+                            <span class="text-red-600">{{ entry.fat_g.toFixed(1) }}</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2 text-[10px] uppercase tracking-wide mt-1">
+                            <span class="text-gray-500 truncate normal-case tracking-normal">{{ entry.title }}</span>
+                            <span class="text-gray-400">Kcal</span>
+                            <span class="text-gray-400">Prot</span>
+                            <span class="text-gray-400">Carb</span>
+                            <span class="text-gray-400">Fat</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
