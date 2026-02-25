@@ -36,15 +36,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # 5. Initialize Database
-python -m cli.main db-init
+python -m cli.main init-db
 ```
 
 ## Deployment
 
-See [SETUP.md](SETUP.md) for Cloudflare Access setup, multi-user admin flow, and OpenClaw API key integration.
+See [SETUP.md](SETUP.md) for Cloudflare Access setup and API key integration.
 
 ### GitHub Actions
-A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** for deployment.
 
 ### Environment Types
 - **Persistent deployment (`make deploy`)**
@@ -120,49 +120,27 @@ Useful commands:
 
 ## Usage
 
-### CLI Commands (via Wrapper Script)
-A wrapper script `food-tracker` is provided for easy access. If you need sudo permissions for Docker, prefix commands with `sudo`.
+### CLI Commands
+Current commands in `cli/main.py`:
 
-**Add a food entry**
 ```bash
-# Basic (time defaults to now)
-./food-tracker add --title "Banana" --kcal 105 --carbs 27 --protein 1.3 --fat 0.4
+# initialize db + migrations
+python -m cli.main init-db
 
-# With specific date/time and confidence score
-./food-tracker add --title "Dinner" --kcal 600 --confidence 0.8 --date 2023-10-27 --time 19:30
-```
+# add one entry
+python -m cli.main add "Banana" 105 0.4 27 1.3
 
-**List entries**
-```bash
-# Recent entries
-./food-tracker list
+# list recent entries
+python -m cli.main list --limit 10
 
-# Filter by date range
-./food-tracker list --from 2023-10-01 --to 2023-10-27
-```
+# delete by id
+python -m cli.main delete 1
 
-**View Stats**
-```bash
-# Daily summary
-./food-tracker day
+# run web ui
+python -m cli.main ui --host 0.0.0.0 --port 8787
 
-# Weekly summary (last 7 days)
-./food-tracker week
-```
-
-**Edit & Delete**
-```bash
-# Delete entry #1
-./food-tracker rm 1
-
-# Edit entry #2 (update calories)
-./food-tracker edit 2 --kcal 200
-```
-
-**Backup & Restore**
-```bash
-# Export to a file inside the container, then copy it out if needed
-./food-tracker export --output backup.json
+# seed mock data (used by make dev if db is empty)
+python -m cli.main seed-mock --if-empty
 ```
 
 ### Web UI
@@ -176,12 +154,19 @@ The database location defaults to:
 - macOS/Linux: `~/.local/share/food/food.db`
 - Windows: `~/AppData/Local/food/food.db`
 
-You can override this by setting the `FOOD_DB_PATH` environment variable.
+You can override this by setting the `FOOD_TRACKER_DB` environment variable.
 
-## Agent Integration
+## API Integration (Agents)
 
-All commands support a `--json` flag to output structured JSON data instead of formatted tables.
+For external agents, prefer HTTP API calls instead of direct local CLI DB writes.
 
-```bash
-python -m cli.main list --json
-```
+- App API: `/api/*` (entries, stats, settings, api keys)
+- Widget API: `/v1/widget/today` (separate route/flow)
+- API key format: `ftk_...`
+- Send key as either:
+  - `Authorization: Bearer <api_key>`
+  - `X-API-Key: <api_key>`
+
+Notes:
+- One API key per user is enforced. Generating a new key revokes/removes old keys.
+- In `dev`, requests without API key can still resolve to `DEV_USER_EMAIL` fallback.

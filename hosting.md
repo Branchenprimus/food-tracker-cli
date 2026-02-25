@@ -49,3 +49,10 @@ docker logs food-tracker
 ## 🔐 Google Cloud Console Infos
 
 Die Verwaltung der OAuth-Anmeldedaten erfolgt im Google Cloud Console Projekt unter dem Punkt "OAuth-Zustimmungsbildschirm". Wichtig: Neue Test-User müssen dort manuell hinzugefügt werden, solange die App im "Testing"-Modus ist.
+
+## 🔑 API-Key Hinweis (aktuell)
+
+- App-API Schlüssel werden im Web-UI generiert (`Settings -> Generate API key`).
+- Pro User ist genau ein aktiver Schlüssel vorgesehen.
+- Beim Erstellen eines neuen Schlüssels wird der alte automatisch entfernt.
+- Cloudflare Access bleibt für Web-Zugriff die primäre Zugriffskontrolle.

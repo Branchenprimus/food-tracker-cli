@@ -25,6 +25,9 @@ The backend expects:
 In `dev`, if this header is missing, backend falls back to:
 - `DEV_USER_EMAIL` (default: `dev@local.foodtracker`)
 
+For local `make deploy` testing without Cloudflare headers, enable:
+- `ALLOW_LOCAL_FALLBACK_IDENTITY=1`
+
 ## 2. Environment Variables
 
 Recommended runtime env vars:
@@ -34,6 +37,7 @@ Recommended runtime env vars:
 - `FOOD_TRACKER_CACHE=data/widget_cache.json`
 - `FOOD_TRACKER_LEGACY_OWNER_EMAIL=owner@example.com` (for migrating old single-user entries)
 - `WIDGET_API_TOKEN=...` (optional legacy widget token)
+- `ALLOW_LOCAL_FALLBACK_IDENTITY=1` (optional local-only deploy testing)
 
 ## 3. API Key Flow (OpenClaw)
 
@@ -41,6 +45,10 @@ In Web UI settings:
 1. Enter key name (for example `OpenClaw`)
 2. Click `Generate API key`
 3. Copy the key immediately (shown once)
+
+Behavior:
+- Only one API key per user is allowed.
+- Creating a new key automatically revokes/removes old keys for that user.
 
 API endpoints:
 - `POST /api/settings/api-keys` create key
@@ -51,6 +59,11 @@ Use key in OpenClaw requests:
 - `Authorization: Bearer <api_key>`
   or
 - `X-API-Key: <api_key>`
+
+App API authentication:
+- `/api/*` accepts app-generated API keys.
+- If an API key is supplied and invalid, request is rejected (`403`).
+- If no key is supplied, Cloudflare/dev identity flow is used.
 
 For widget-style data:
 - `GET /v1/widget/today`

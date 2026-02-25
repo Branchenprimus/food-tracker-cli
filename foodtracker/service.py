@@ -146,6 +146,9 @@ class FoodService:
     def get_user_by_email(self, email: str) -> Optional[UserIdentity]:
         return self.user_repo.get_by_email(email)
 
+    def get_user_by_id(self, user_id: int) -> Optional[UserIdentity]:
+        return self.user_repo.get_by_id(user_id)
+
     def create_api_key(self, user_id: int, name: str, expires_in_days: Optional[int] = None) -> tuple[APIKeyRecord, str]:
         expires_at = None
         if expires_in_days:

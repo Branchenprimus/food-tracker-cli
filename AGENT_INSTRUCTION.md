@@ -1,77 +1,54 @@
 # Agent Instructions for Food Tracker
 
-This document provides guidelines for AI agents interacting with the Food Tracker CLI via the `food-tracker` wrapper script.
+This document provides guidelines for AI agents interacting with this project.
 
-## 🚀 Getting Started
+## Preferred Integration Path
 
-The most reliable way to interact with the application is through the `./food-tracker` wrapper script. This script executes commands inside the running Docker container, ensuring access to the correct environment and database.
+Use the HTTP API exposed by the app instead of direct DB writes.
 
-**Prerequisites:**
-- The Docker container must be running (`make dev` or `make deploy`).
-- You may need `sudo` privileges if the user is not in the `docker` group.
+- App API base (dev): `http://localhost:8686`
+- App API base (deploy): `http://localhost:8787`
+- API key auth headers:
+  - `X-API-Key: <ftk_...>`
+  - or `Authorization: Bearer <ftk_...>`
 
-## 🛠️ Core Commands
+## Authentication Behavior
 
-### 1. Adding Entries
-Use the `add` command to log food. 
-- **Required**: `--title`
-- **Recommended**: `--kcal` (approximate is fine)
-- **Optional**: `--protein`, `--carbs`, `--fat`, `--date`, `--time`
+- API keys are generated in the Web UI settings.
+- One API key per user is enforced.
+- Generating a new key revokes/removes old keys for that user.
+- If an API key is supplied and invalid, API returns `403`.
+- In `dev`, no-key requests can still resolve to `DEV_USER_EMAIL` fallback identity.
 
-```bash
-# Basic usage
-./food-tracker add --title "Grilled Chicken Salad" --kcal 450
+## Core API Endpoints
 
-# Detailed usage
-./food-tracker add --title "Oatmeal with Blueberries" --kcal 300 --carbs 45 --protein 10 --fat 5
-```
+- `POST /api/entries`
+- `GET /api/entries?date=YYYY-MM-DD`
+- `PUT /api/entries/{id}`
+- `DELETE /api/entries/{id}`
+- `GET /api/stats/day?date=YYYY-MM-DD`
+- `GET /api/stats/streak`
+- `GET /api/stats/history?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/settings/goals`
+- `PUT /api/settings/goals`
+- `GET /api/settings/api-keys`
+- `POST /api/settings/api-keys`
+- `DELETE /api/settings/api-keys/{id}`
 
-### 2. Retrieving Data (Machine Readable)
-**ALWAYS use the `--json` flag** when reading data. This ensures the output is structured and easy to parse.
-
-#### List Recent Entries
-Values are returned in a JSON array.
-
-```bash
-./food-tracker list --json --limit 5
-```
-
-#### Get Daily Stats
-Returns totals for the current day (or specified date).
+## Example Requests
 
 ```bash
-./food-tracker day --json
+# create entry
+curl -X POST http://localhost:8686/api/entries \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: ftk_...' \
+  -d '{"title":"Banana","kcal":105,"fat_g":0.4,"carbs_g":27,"protein_g":1.3,"serving_amount":1,"confidence":0.9,"entry_date":"2026-02-25","entry_time":"10:30"}'
+
+# list entries for one day
+curl 'http://localhost:8686/api/entries?date=2026-02-25' -H 'X-API-Key: ftk_...'
 ```
 
-#### Get Weekly Summary
-Returns a summary of the last 7 days.
+## Local CLI Notes
 
-```bash
-./food-tracker week --json
-```
-
-### 3. Modifying Data
-You can edit or delete entries using their `id`.
-
-```bash
-# Delete an entry
-./food-tracker rm <ID>
-
-# Update an entry (e.g., correct calories)
-./food-tracker edit <ID> --kcal 500
-```
-
-## 🤖 Best Practices for Agents
-
-1.  **Use JSON**: Always append `--json` to `list`, `day`, and `week` commands for reliable parsing.
-2.  **Estimate Macros**: If exact macros are unknown, provide a reasonable estimate for calories.
-3.  **Check Context**: Before adding a duplicate entry, check `list` to see if it was already logged recently.
-4.  **Error Handling**: If a command fails, check the error message. Common issues include missing arguments or database locks (rare).
-5.  **Estimate conservative**: Intentionally estimate calories conservatively on the higher side so that my recorded intake tends to be slightly overestimated rather than underestimated.
-
-
-## 🔍 Troubleshooting
-
-- **"docker: command not found"**: Ensure Docker is installed and in the PATH.
-- **Permission Denied**: Try running with `sudo ./food-tracker ...`.
-- **Container not running**: The wrapper script requires the `food-tracker` container to be active.
+The local Typer CLI in `cli/main.py` exists for local admin/dev operations (`init-db`, `add`, `list`, `delete`, `ui`, `seed-mock`).
+It writes via service/db internals and is not the recommended auth boundary for agent integrations.

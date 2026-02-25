@@ -27,6 +27,7 @@ CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
 CMD_GIT_REF = os.getenv("APP_GIT_REF", "dev" if CMD_ENV == "dev" else "master")
 DEV_USER_EMAIL = os.getenv("DEV_USER_EMAIL", "dev@local.foodtracker")
+ALLOW_LOCAL_FALLBACK_IDENTITY = os.getenv("ALLOW_LOCAL_FALLBACK_IDENTITY", "0") == "1"
 
 
 def _is_valid_email(email: str) -> bool:
@@ -46,6 +47,9 @@ def get_current_user(cf_email: Optional[str] = Header(default=None, alias="CF-Ac
         email = cf_email.strip().lower()
     elif CMD_ENV == "dev":
         email = DEV_USER_EMAIL.lower()
+    elif ALLOW_LOCAL_FALLBACK_IDENTITY:
+        # Optional escape hatch for local deploy-mode testing without Cloudflare Access.
+        email = DEV_USER_EMAIL.lower()
     else:
         raise HTTPException(status_code=401, detail="Missing Cloudflare user identity header")
 
@@ -54,6 +58,29 @@ def get_current_user(cf_email: Optional[str] = Header(default=None, alias="CF-Ac
 
     user = service.ensure_user(email=email)
     return user
+
+
+def get_authenticated_user(
+    authorization: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    cf_email: Optional[str] = Header(default=None, alias="CF-Access-Authenticated-User-Email"),
+) -> UserIdentity:
+    """
+    Unified auth for API routes:
+    1) API key (if provided) -> user scoped access
+    2) Cloudflare identity / dev fallback -> UI access
+    """
+    token = _extract_api_key(authorization=authorization, x_api_key=x_api_key)
+    if token:
+        auth = service.authenticate_api_key(token)
+        if not auth:
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        _, user_id = auth
+        user = service.get_user_by_id(user_id)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=403, detail="Inactive user")
+        return user
+    return get_current_user(cf_email=cf_email)
 
 @app.get("/api/info")
 def get_info():
@@ -80,13 +107,13 @@ def read_root():
 
 # Existing API endpoints (using Service -> DB)
 @app.get("/api/entries", response_model=List[Entry])
-def get_entries(date: Optional[date] = None, user: UserIdentity = Depends(get_current_user)):
+def get_entries(date: Optional[date] = None, user: UserIdentity = Depends(get_authenticated_user)):
     if date:
         return service.list_entries(from_date=date, to_date=date, limit=1000, user_id=user.id)
     return service.list_entries(limit=100, user_id=user.id)
 
 @app.post("/api/entries", response_model=Entry)
-def add_entry(entry: Entry, user: UserIdentity = Depends(get_current_user)):
+def add_entry(entry: Entry, user: UserIdentity = Depends(get_authenticated_user)):
     return service.add_entry(
         title=entry.title,
         kcal=entry.kcal,
@@ -101,7 +128,7 @@ def add_entry(entry: Entry, user: UserIdentity = Depends(get_current_user)):
     )
 
 @app.put("/api/entries/{entry_id}", response_model=Entry)
-def update_entry(entry_id: int, entry: Entry, user: UserIdentity = Depends(get_current_user)):
+def update_entry(entry_id: int, entry: Entry, user: UserIdentity = Depends(get_authenticated_user)):
     updated = service.update_entry(
         entry_id,
         user_id=user.id,
@@ -120,46 +147,46 @@ def update_entry(entry_id: int, entry: Entry, user: UserIdentity = Depends(get_c
     return updated
 
 @app.delete("/api/entries/{entry_id}")
-def delete_entry(entry_id: int, user: UserIdentity = Depends(get_current_user)):
+def delete_entry(entry_id: int, user: UserIdentity = Depends(get_authenticated_user)):
     success = service.delete_entry(entry_id, user_id=user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"status": "success"}
 
 @app.get("/api/stats/day", response_model=DailyStats)
-def get_daily_stats(date: Optional[date] = None, user: UserIdentity = Depends(get_current_user)):
+def get_daily_stats(date: Optional[date] = None, user: UserIdentity = Depends(get_authenticated_user)):
     return service.get_daily_summary(date, user_id=user.id)
 
 @app.get("/api/stats/streak")
-def get_streak(user: UserIdentity = Depends(get_current_user)):
+def get_streak(user: UserIdentity = Depends(get_authenticated_user)):
     streak = service.get_current_streak(user_id=user.id)
     return {"streak": streak}
 
 @app.get("/api/stats/history", response_model=List[DailyStats])
-def get_history(start: date, end: date, user: UserIdentity = Depends(get_current_user)):
+def get_history(start: date, end: date, user: UserIdentity = Depends(get_authenticated_user)):
     return service.get_stats_history(start, end, user_id=user.id)
 
 @app.get("/api/settings/goals", response_model=GoalSettings)
-def get_goal_settings(user: UserIdentity = Depends(get_current_user)):
+def get_goal_settings(user: UserIdentity = Depends(get_authenticated_user)):
     return service.get_goal_settings(user_id=user.id)
 
 @app.put("/api/settings/goals", response_model=GoalSettings)
-def put_goal_settings(settings: GoalSettings, user: UserIdentity = Depends(get_current_user)):
+def put_goal_settings(settings: GoalSettings, user: UserIdentity = Depends(get_authenticated_user)):
     return service.save_goal_settings(user_id=user.id, settings=settings)
 
 
 @app.get("/api/me", response_model=UserIdentity)
-def get_me(user: UserIdentity = Depends(get_current_user)):
+def get_me(user: UserIdentity = Depends(get_authenticated_user)):
     return user
 
 
 @app.get("/api/settings/api-keys", response_model=List[APIKeyRecord])
-def list_api_keys(user: UserIdentity = Depends(get_current_user)):
+def list_api_keys(user: UserIdentity = Depends(get_authenticated_user)):
     return service.list_api_keys(user.id)
 
 
 @app.post("/api/settings/api-keys", response_model=APIKeyCreateResponse)
-def create_api_key(payload: APIKeyCreateRequest, user: UserIdentity = Depends(get_current_user)):
+def create_api_key(payload: APIKeyCreateRequest, user: UserIdentity = Depends(get_authenticated_user)):
     record, raw_key = service.create_api_key(
         user_id=user.id,
         name=payload.name,
@@ -174,7 +201,7 @@ def create_api_key(payload: APIKeyCreateRequest, user: UserIdentity = Depends(ge
 
 
 @app.delete("/api/settings/api-keys/{key_id}")
-def revoke_api_key(key_id: int, user: UserIdentity = Depends(get_current_user)):
+def revoke_api_key(key_id: int, user: UserIdentity = Depends(get_authenticated_user)):
     if not service.revoke_api_key(user_id=user.id, key_id=key_id):
         raise HTTPException(status_code=404, detail="API key not found")
     return {"status": "success"}
