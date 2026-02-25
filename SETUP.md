@@ -2,7 +2,7 @@
 
 This guide explains:
 - Cloudflare Access login for the Web UI
-- multi-user admin setup
+- Cloudflare-only user access model
 - API key usage for OpenClaw integration
 
 ## 1. Cloudflare Access (Google IdP + Email Policy)
@@ -32,21 +32,10 @@ Recommended runtime env vars:
 - `APP_GIT_REF=master` (or `dev`)
 - `FOOD_TRACKER_DB=data/app.db`
 - `FOOD_TRACKER_CACHE=data/widget_cache.json`
-- `FOOD_TRACKER_ADMIN_EMAILS=admin1@example.com,admin2@example.com`
 - `FOOD_TRACKER_LEGACY_OWNER_EMAIL=owner@example.com` (for migrating old single-user entries)
 - `WIDGET_API_TOKEN=...` (optional legacy widget token)
 
-## 3. Multi-User Admin Center
-
-Open the Web UI, then click the settings gear.
-
-If your user is admin:
-- you can add/update users by email
-- toggle `admin` and `active` flags
-
-Admin is granted automatically for emails in `FOOD_TRACKER_ADMIN_EMAILS`.
-
-## 4. API Key Flow (OpenClaw)
+## 3. API Key Flow (OpenClaw)
 
 In Web UI settings:
 1. Enter key name (for example `OpenClaw`)
@@ -68,7 +57,7 @@ For widget-style data:
 
 With API key, response is user-scoped.
 
-## 5. Local Development
+## 4. Local Development
 
 Start dev stack:
 ```bash
@@ -77,8 +66,8 @@ make dev
 
 In dev, seeding is automatic when DB is empty.
 
-## 6. Notes
+## 5. Notes
 
 - API keys are stored hashed in DB (raw key is not stored).
-- Revoked/inactive users lose access immediately.
+- Cloudflare Access is the source of truth for who can access the web app.
 - Existing legacy entries can be auto-assigned to `FOOD_TRACKER_LEGACY_OWNER_EMAIL`.

@@ -140,20 +140,11 @@ class FoodService:
         
         save_cache(data)
 
-    def ensure_user(self, email: str, is_admin: bool = False) -> UserIdentity:
-        return self.user_repo.create_if_missing(email=email, is_admin=is_admin)
+    def ensure_user(self, email: str) -> UserIdentity:
+        return self.user_repo.create_if_missing(email=email, is_admin=False)
 
     def get_user_by_email(self, email: str) -> Optional[UserIdentity]:
         return self.user_repo.get_by_email(email)
-
-    def list_users(self) -> List[UserIdentity]:
-        return self.user_repo.list_users()
-
-    def upsert_user(self, email: str, is_admin: bool, is_active: bool) -> UserIdentity:
-        return self.user_repo.upsert_user(email=email, is_admin=is_admin, is_active=is_active)
-
-    def update_user(self, user_id: int, is_admin: Optional[bool], is_active: Optional[bool]) -> Optional[UserIdentity]:
-        return self.user_repo.update_user(user_id=user_id, is_admin=is_admin, is_active=is_active)
 
     def create_api_key(self, user_id: int, name: str, expires_in_days: Optional[int] = None) -> tuple[APIKeyRecord, str]:
         expires_at = None

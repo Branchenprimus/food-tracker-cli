@@ -15,8 +15,6 @@ from foodtracker.models import (
     APIKeyRecord,
     APIKeyCreateRequest,
     APIKeyCreateResponse,
-    UserUpsertRequest,
-    UserUpdateRequest,
 )
 from foodtracker.cache import load_cache
 
@@ -29,7 +27,6 @@ CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
 CMD_GIT_REF = os.getenv("APP_GIT_REF", "dev" if CMD_ENV == "dev" else "master")
 DEV_USER_EMAIL = os.getenv("DEV_USER_EMAIL", "dev@local.foodtracker")
-ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("FOOD_TRACKER_ADMIN_EMAILS", "").split(",") if e.strip()}
 
 
 def _is_valid_email(email: str) -> bool:
@@ -55,15 +52,7 @@ def get_current_user(cf_email: Optional[str] = Header(default=None, alias="CF-Ac
     if not _is_valid_email(email):
         raise HTTPException(status_code=400, detail="Invalid user email in Cloudflare header")
 
-    user = service.ensure_user(email=email, is_admin=email in ADMIN_EMAILS)
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="User disabled")
-    return user
-
-
-def require_admin(user: UserIdentity = Depends(get_current_user)) -> UserIdentity:
-    if not user.is_admin:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    user = service.ensure_user(email=email)
     return user
 
 @app.get("/api/info")
@@ -190,25 +179,6 @@ def revoke_api_key(key_id: int, user: UserIdentity = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="API key not found")
     return {"status": "success"}
 
-
-@app.get("/api/admin/users", response_model=List[UserIdentity])
-def list_users(admin: UserIdentity = Depends(require_admin)):
-    return service.list_users()
-
-
-@app.post("/api/admin/users", response_model=UserIdentity)
-def upsert_user(payload: UserUpsertRequest, admin: UserIdentity = Depends(require_admin)):
-    if not _is_valid_email(payload.email):
-        raise HTTPException(status_code=400, detail="Invalid email")
-    return service.upsert_user(email=payload.email.lower(), is_admin=payload.is_admin, is_active=payload.is_active)
-
-
-@app.patch("/api/admin/users/{user_id}", response_model=UserIdentity)
-def patch_user(user_id: int, payload: UserUpdateRequest, admin: UserIdentity = Depends(require_admin)):
-    updated = service.update_user(user_id=user_id, is_admin=payload.is_admin, is_active=payload.is_active)
-    if not updated:
-        raise HTTPException(status_code=404, detail="User not found")
-    return updated
 
 # In-memory cache with mtime tracking
 _cache_data: Optional[Dict[str, Any]] = None

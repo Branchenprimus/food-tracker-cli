@@ -171,33 +171,6 @@
                         </div>
                     </div>
                 </div>
-                <div v-if="currentUser && currentUser.is_admin" class="border-t pt-3 mt-3">
-                    <div class="text-xs text-gray-500 uppercase font-medium mb-2">Admin Center</div>
-                    <div class="flex gap-2 mb-2">
-                        <input v-model="adminDraftEmail" placeholder="user@email.com"
-                            class="flex-1 border rounded px-3 py-2 text-sm">
-                        <label class="inline-flex items-center gap-1 text-xs">
-                            <input type="checkbox" v-model="adminDraftIsAdmin"> Admin
-                        </label>
-                        <button @click="adminAddUser"
-                            class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm hover:bg-gray-50">Add/Update</button>
-                    </div>
-                    <div v-if="adminUsers.length > 0" class="space-y-1 max-h-32 overflow-y-auto">
-                        <div v-for="u in adminUsers" :key="u.id" class="flex items-center justify-between text-xs border rounded px-2 py-1">
-                            <span class="truncate">{{ u.email }}</span>
-                            <div class="flex items-center gap-2">
-                                <label class="inline-flex items-center gap-1">
-                                    <input type="checkbox" :checked="u.is_admin" @change="adminPatchUser(u, { is_admin: $event.target.checked })">
-                                    admin
-                                </label>
-                                <label class="inline-flex items-center gap-1">
-                                    <input type="checkbox" :checked="u.is_active" @change="adminPatchUser(u, { is_active: $event.target.checked })">
-                                    active
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="flex gap-2 justify-end">
                     <button @click="showSettings = false"
                         class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm">Cancel</button>
@@ -332,13 +305,9 @@
                         { key: 'carbs', label: 'Carbs' },
                         { key: 'fat', label: 'Fat' }
                     ],
-                    currentUser: null,
                     apiKeys: [],
                     newApiKeyName: 'OpenClaw',
-                    generatedApiKey: '',
-                    adminUsers: [],
-                    adminDraftEmail: '',
-                    adminDraftIsAdmin: false
+                    generatedApiKey: ''
                 }
             },
             created() {
@@ -348,7 +317,6 @@
                 this.fetchData()
                 this.fetchVersion()
                 this.loadGoalSettings()
-                this.fetchCurrentUser()
                 this.fetchApiKeys()
             },
             methods: {
@@ -419,18 +387,6 @@
                     if (!target || target <= 0) return 0
                     return Math.round((Number(current) / Number(target)) * 100)
                 },
-                async fetchCurrentUser() {
-                    try {
-                        const res = await fetch('/api/me')
-                        if (!res.ok) return
-                        this.currentUser = await res.json()
-                        if (this.currentUser && this.currentUser.is_admin) {
-                            this.fetchAdminUsers()
-                        }
-                    } catch (e) {
-                        console.error(e)
-                    }
-                },
                 async fetchApiKeys() {
                     try {
                         const res = await fetch('/api/settings/api-keys')
@@ -459,46 +415,6 @@
                     try {
                         await fetch(`/api/settings/api-keys/${keyId}`, { method: 'DELETE' })
                         this.fetchApiKeys()
-                    } catch (e) {
-                        console.error(e)
-                    }
-                },
-                async fetchAdminUsers() {
-                    try {
-                        const res = await fetch('/api/admin/users')
-                        if (!res.ok) return
-                        this.adminUsers = await res.json()
-                    } catch (e) {
-                        console.error(e)
-                    }
-                },
-                async adminAddUser() {
-                    if (!this.adminDraftEmail) return
-                    try {
-                        await fetch('/api/admin/users', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                email: this.adminDraftEmail,
-                                is_admin: this.adminDraftIsAdmin,
-                                is_active: true
-                            })
-                        })
-                        this.adminDraftEmail = ''
-                        this.adminDraftIsAdmin = false
-                        this.fetchAdminUsers()
-                    } catch (e) {
-                        console.error(e)
-                    }
-                },
-                async adminPatchUser(user, payload) {
-                    try {
-                        await fetch(`/api/admin/users/${user.id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        })
-                        this.fetchAdminUsers()
                     } catch (e) {
                         console.error(e)
                     }
