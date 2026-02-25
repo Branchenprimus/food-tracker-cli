@@ -114,18 +114,44 @@
         <!-- Entries List -->
         <div class="space-y-3">
             <div v-for="entry in entries" :key="entry.id"
-                class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <div>
-                    <div class="font-medium">{{ entry.title }}</div>
-                    <div class="text-xs text-gray-500 mt-1 flex gap-2">
-                        <span>{{ formatTime(entry.entry_time) }}</span>
-                        <span class="text-green-600">{{ Math.round(entry.kcal) }} kcal</span>
-                        <span class="text-blue-600">{{ entry.protein_g }}p</span>
-                        <span class="text-yellow-600">{{ entry.carbs_g }}c</span>
-                        <span class="text-red-600">{{ entry.fat_g }}f</span>
+                class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-start gap-3">
+                    <div>
+                        <div class="font-medium">{{ entry.title }}</div>
+                        <div class="text-xs text-gray-500 mt-1 flex gap-2">
+                            <span>{{ formatTime(entry.entry_time) }}</span>
+                            <span class="text-green-600">{{ Math.round(entry.kcal) }} kcal</span>
+                            <span class="text-blue-600">{{ entry.protein_g }}p</span>
+                            <span class="text-yellow-600">{{ entry.carbs_g }}c</span>
+                            <span class="text-red-600">{{ entry.fat_g }}f</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button @click="startEdit(entry)"
+                            class="text-xs font-medium text-gray-600 hover:text-black border border-gray-200 hover:border-gray-400 px-2 py-1 rounded-md transition">Edit</button>
+                        <button @click="deleteEntry(entry.id)" class="text-gray-300 hover:text-red-500 px-2">&times;</button>
                     </div>
                 </div>
-                <button @click="deleteEntry(entry.id)" class="text-gray-300 hover:text-red-500 px-2">&times;</button>
+                <div v-if="editingEntryId === entry.id" class="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                    <input v-model="editEntry.title" placeholder="Food item" class="w-full border rounded px-3 py-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input v-model.number="editEntry.kcal" type="number" placeholder="Kcal"
+                            class="border rounded px-3 py-2">
+                        <input v-model.number="editEntry.protein_g" type="number" placeholder="Protein (g)"
+                            class="border rounded px-3 py-2">
+                        <input v-model.number="editEntry.carbs_g" type="number" placeholder="Carbs (g)"
+                            class="border rounded px-3 py-2">
+                        <input v-model.number="editEntry.fat_g" type="number" placeholder="Fat (g)"
+                            class="border rounded px-3 py-2">
+                    </div>
+                    <div class="flex gap-2">
+                        <input v-model="editEntry.entry_time" type="time" class="border rounded px-3 py-2 flex-1">
+                        <button @click="cancelEdit"
+                            class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition">Cancel</button>
+                        <button @click="saveEdit"
+                            class="bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition">Save</button>
+                    </div>
+                </div>
             </div>
             <div v-if="entries.length === 0" class="text-center text-gray-400 py-8">
                 No entries for this day
@@ -154,7 +180,9 @@
                     },
                     chartView: 'week',
                     appInfo: { version: '...', env: '...' },
-                    lastChartUpdate: 0
+                    lastChartUpdate: 0,
+                    editingEntryId: null,
+                    editEntry: null
                 }
             },
             created() {
@@ -179,6 +207,7 @@
                     const date = new Date(this.currentDate)
                     date.setDate(date.getDate() + days)
                     this.currentDate = date.toISOString().split('T')[0]
+                    this.cancelEdit()
                     this.fetchData()
                 },
                 async fetchData() {
@@ -191,6 +220,9 @@
                     this.stats = await statsRes.json()
                     const streakData = await streakRes.json()
                     this.streak = streakData.streak
+                    if (this.editingEntryId && !this.entries.some(entry => entry.id === this.editingEntryId)) {
+                        this.cancelEdit()
+                    }
                     this.updateChart()
                 },
                 async updateChart() {
@@ -325,8 +357,45 @@
                 async deleteEntry(id) {
                     if (confirm('Delete this entry?')) {
                         await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+                        if (this.editingEntryId === id) {
+                            this.cancelEdit()
+                        }
                         this.fetchData()
                     }
+                },
+                startEdit(entry) {
+                    this.showAdd = false
+                    this.editingEntryId = entry.id
+                    this.editEntry = {
+                        ...entry,
+                        entry_date: this.currentDate,
+                        entry_time: this.formatTime(entry.entry_time)
+                    }
+                },
+                cancelEdit() {
+                    this.editingEntryId = null
+                    this.editEntry = null
+                },
+                async saveEdit() {
+                    if (!this.editEntry || !this.editEntry.title) return
+
+                    await fetch(`/api/entries/${this.editingEntryId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...this.editEntry,
+                            entry_date: this.currentDate,
+                            serving_amount: this.editEntry.serving_amount || 1.0,
+                            confidence: this.editEntry.confidence || 0.8,
+                            kcal: this.editEntry.kcal || 0,
+                            protein_g: this.editEntry.protein_g || 0,
+                            carbs_g: this.editEntry.carbs_g || 0,
+                            fat_g: this.editEntry.fat_g || 0,
+                        })
+                    })
+
+                    this.cancelEdit()
+                    this.fetchData()
                 },
                 formatTime(t) {
                     return t.substr(0, 5)
