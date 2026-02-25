@@ -53,6 +53,24 @@ def add_entry(entry: Entry):
     )
     return created
 
+@app.put("/api/entries/{entry_id}", response_model=Entry)
+def update_entry(entry_id: int, entry: Entry):
+    updated = service.update_entry(
+        entry_id,
+        title=entry.title,
+        kcal=entry.kcal,
+        fat_g=entry.fat_g,
+        carbs_g=entry.carbs_g,
+        protein_g=entry.protein_g,
+        serving_amount=entry.serving_amount,
+        confidence=entry.confidence,
+        entry_date=entry.entry_date,
+        entry_time=entry.entry_time
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return updated
+
 @app.delete("/api/entries/{entry_id}")
 def delete_entry(entry_id: int):
     success = service.delete_entry(entry_id)
