@@ -67,6 +67,8 @@ You can edit or delete entries using their `id`.
 2.  **Estimate Macros**: If exact macros are unknown, provide a reasonable estimate for calories.
 3.  **Check Context**: Before adding a duplicate entry, check `list` to see if it was already logged recently.
 4.  **Error Handling**: If a command fails, check the error message. Common issues include missing arguments or database locks (rare).
+5.  **Estimate conservative**: Intentionally estimate calories conservatively on the higher side so that my recorded intake tends to be slightly overestimated rather than underestimated.
+
 
 ## 🔍 Troubleshooting
 
