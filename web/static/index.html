@@ -70,6 +70,22 @@
             <div class="h-64">
                 <canvas id="statsChart"></canvas>
             </div>
+            <div class="mt-3 text-[11px] text-gray-600 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="uppercase tracking-wide text-[10px] font-semibold text-gray-400 mr-1">Actual</span>
+                    <span v-for="item in legendItems" :key="`actual-${item.key}`" class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-5 h-0.5 rounded" :style="{ backgroundColor: chartPalette[item.key] }"></span>
+                        <span>{{ item.label }}</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="uppercase tracking-wide text-[10px] font-semibold text-gray-400 mr-1">Goals</span>
+                    <span v-for="item in legendItems" :key="`goal-${item.key}`" class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-5 h-0.5 border-t-2 border-dashed" :style="{ borderColor: chartPalette[item.key] }"></span>
+                        <span>{{ item.label }}</span>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -244,7 +260,14 @@
                     editEntry: null,
                     showSettings: false,
                     goalSettings: { bodyWeightKg: 80, weightLossPerWeekKg: 0.3 },
-                    goals: { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+                    goals: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+                    chartPalette: { kcal: '#16a34a', protein: '#2563eb', carbs: '#ca8a04', fat: '#dc2626' },
+                    legendItems: [
+                        { key: 'kcal', label: 'Kcal' },
+                        { key: 'protein', label: 'Protein' },
+                        { key: 'carbs', label: 'Carbs' },
+                        { key: 'fat', label: 'Fat' }
+                    ]
                 }
             },
             created() {
@@ -416,22 +439,13 @@
                         this.chartInstance.destroy()
                     }
 
-                    const palette = {
-                        kcal: '#16a34a',
-                        protein: '#2563eb',
-                        carbs: '#ca8a04',
-                        fat: '#dc2626',
-                        kcalBg: 'rgba(22,163,74,0.25)',
-                        proteinBg: 'rgba(37,99,235,0.25)',
-                        carbsBg: 'rgba(202,138,4,0.25)',
-                        fatBg: 'rgba(220,38,38,0.25)'
-                    }
+                    const palette = this.chartPalette
 
                     const datasets = [
-                        { label: 'Kcal', data: kcal, borderColor: palette.kcal, backgroundColor: palette.kcalBg, tension: 0.15, yAxisID: 'y', pointRadius: mode === 'day' ? 0 : 2 },
-                        { label: 'Protein', data: protein, borderColor: palette.protein, backgroundColor: palette.proteinBg, tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
-                        { label: 'Carbs', data: carbs, borderColor: palette.carbs, backgroundColor: palette.carbsBg, tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
-                        { label: 'Fat', data: fat, borderColor: palette.fat, backgroundColor: palette.fatBg, tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 }
+                        { label: 'Kcal', data: kcal, borderColor: palette.kcal, backgroundColor: 'rgba(22,163,74,0.25)', tension: 0.15, yAxisID: 'y', pointRadius: mode === 'day' ? 0 : 2 },
+                        { label: 'Protein', data: protein, borderColor: palette.protein, backgroundColor: 'rgba(37,99,235,0.25)', tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
+                        { label: 'Carbs', data: carbs, borderColor: palette.carbs, backgroundColor: 'rgba(202,138,4,0.25)', tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 },
+                        { label: 'Fat', data: fat, borderColor: palette.fat, backgroundColor: 'rgba(220,38,38,0.25)', tension: 0.15, yAxisID: 'y1', pointRadius: mode === 'day' ? 0 : 2 }
                     ]
 
                     if (labels.length > 0 && this.goals.kcal > 0) {
@@ -456,13 +470,7 @@
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: {
-                                    labels: {
-                                        usePointStyle: true,
-                                        pointStyle: 'circle',
-                                        boxWidth: 8,
-                                        boxHeight: 8,
-                                        padding: 12
-                                    }
+                                    display: false
                                 }
                             },
                             scales: {
