@@ -366,13 +366,11 @@
                     this.fetchData()
                 },
                 async deleteEntry(id) {
-                    if (confirm('Delete this entry?')) {
-                        await fetch(`/api/entries/${id}`, { method: 'DELETE' })
-                        if (this.editingEntryId === id) {
-                            this.cancelEdit()
-                        }
-                        this.fetchData()
+                    await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+                    if (this.editingEntryId === id) {
+                        this.cancelEdit()
                     }
+                    this.fetchData()
                 },
                 async duplicateEntry(entry) {
                     await fetch('/api/entries', {
