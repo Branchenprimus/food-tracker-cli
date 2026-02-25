@@ -149,11 +149,56 @@
                     high to support muscle retention, fat is set to a healthy minimum, and the remaining calories are
                     assigned to carbs to maintain energy for training and daily performance.
                 </div>
+                <div class="border-t pt-3 mt-3">
+                    <div class="text-xs text-gray-500 uppercase font-medium mb-2">API Access</div>
+                    <div class="flex gap-2">
+                        <input v-model="newApiKeyName" placeholder="Key name (e.g. OpenClaw)"
+                            class="flex-1 border rounded px-3 py-2 text-sm">
+                        <button type="button" @click="generateApiKey"
+                            class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm hover:bg-gray-50">
+                            Generate API key
+                        </button>
+                    </div>
+                    <div v-if="generatedApiKey" class="mt-2 text-xs bg-amber-50 border border-amber-200 rounded p-2">
+                        <div class="font-medium text-amber-800">Copy now - this key is shown only once</div>
+                        <div class="font-mono break-all mt-1">{{ generatedApiKey }}</div>
+                    </div>
+                    <div v-if="apiKeys.length > 0" class="mt-3 space-y-1">
+                        <div v-for="key in apiKeys" :key="key.id"
+                            class="flex items-center justify-between text-xs border rounded px-2 py-1">
+                            <span class="truncate">{{ key.name }} ({{ key.key_prefix }}...)</span>
+                            <button @click="revokeApiKey(key.id)" class="text-red-600 hover:text-red-700">Revoke</button>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="currentUser && currentUser.is_admin" class="border-t pt-3 mt-3">
+                    <div class="text-xs text-gray-500 uppercase font-medium mb-2">Admin Center</div>
+                    <div class="flex gap-2 mb-2">
+                        <input v-model="adminDraftEmail" placeholder="user@email.com"
+                            class="flex-1 border rounded px-3 py-2 text-sm">
+                        <label class="inline-flex items-center gap-1 text-xs">
+                            <input type="checkbox" v-model="adminDraftIsAdmin"> Admin
+                        </label>
+                        <button @click="adminAddUser"
+                            class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm hover:bg-gray-50">Add/Update</button>
+                    </div>
+                    <div v-if="adminUsers.length > 0" class="space-y-1 max-h-32 overflow-y-auto">
+                        <div v-for="u in adminUsers" :key="u.id" class="flex items-center justify-between text-xs border rounded px-2 py-1">
+                            <span class="truncate">{{ u.email }}</span>
+                            <div class="flex items-center gap-2">
+                                <label class="inline-flex items-center gap-1">
+                                    <input type="checkbox" :checked="u.is_admin" @change="adminPatchUser(u, { is_admin: $event.target.checked })">
+                                    admin
+                                </label>
+                                <label class="inline-flex items-center gap-1">
+                                    <input type="checkbox" :checked="u.is_active" @change="adminPatchUser(u, { is_active: $event.target.checked })">
+                                    active
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex gap-2 justify-end">
-                    <button type="button"
-                        class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm hover:bg-gray-50">
-                        Generate API key
-                    </button>
                     <button @click="showSettings = false"
                         class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm">Cancel</button>
                     <button @click="saveGoalSettings"
@@ -286,7 +331,14 @@
                         { key: 'protein', label: 'Protein' },
                         { key: 'carbs', label: 'Carbs' },
                         { key: 'fat', label: 'Fat' }
-                    ]
+                    ],
+                    currentUser: null,
+                    apiKeys: [],
+                    newApiKeyName: 'OpenClaw',
+                    generatedApiKey: '',
+                    adminUsers: [],
+                    adminDraftEmail: '',
+                    adminDraftIsAdmin: false
                 }
             },
             created() {
@@ -296,6 +348,8 @@
                 this.fetchData()
                 this.fetchVersion()
                 this.loadGoalSettings()
+                this.fetchCurrentUser()
+                this.fetchApiKeys()
             },
             methods: {
                 // Helper to get local date string YYYY-MM-DD
@@ -364,6 +418,90 @@
                 goalPercent(current, target) {
                     if (!target || target <= 0) return 0
                     return Math.round((Number(current) / Number(target)) * 100)
+                },
+                async fetchCurrentUser() {
+                    try {
+                        const res = await fetch('/api/me')
+                        if (!res.ok) return
+                        this.currentUser = await res.json()
+                        if (this.currentUser && this.currentUser.is_admin) {
+                            this.fetchAdminUsers()
+                        }
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async fetchApiKeys() {
+                    try {
+                        const res = await fetch('/api/settings/api-keys')
+                        if (!res.ok) return
+                        this.apiKeys = await res.json()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async generateApiKey() {
+                    try {
+                        const res = await fetch('/api/settings/api-keys', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: this.newApiKeyName || 'OpenClaw' })
+                        })
+                        if (!res.ok) return
+                        const data = await res.json()
+                        this.generatedApiKey = data.api_key
+                        this.fetchApiKeys()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async revokeApiKey(keyId) {
+                    try {
+                        await fetch(`/api/settings/api-keys/${keyId}`, { method: 'DELETE' })
+                        this.fetchApiKeys()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async fetchAdminUsers() {
+                    try {
+                        const res = await fetch('/api/admin/users')
+                        if (!res.ok) return
+                        this.adminUsers = await res.json()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async adminAddUser() {
+                    if (!this.adminDraftEmail) return
+                    try {
+                        await fetch('/api/admin/users', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: this.adminDraftEmail,
+                                is_admin: this.adminDraftIsAdmin,
+                                is_active: true
+                            })
+                        })
+                        this.adminDraftEmail = ''
+                        this.adminDraftIsAdmin = false
+                        this.fetchAdminUsers()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                },
+                async adminPatchUser(user, payload) {
+                    try {
+                        await fetch(`/api/admin/users/${user.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        })
+                        this.fetchAdminUsers()
+                    } catch (e) {
+                        console.error(e)
+                    }
                 },
                 async fetchData() {
                     const [entriesRes, statsRes, streakRes] = await Promise.all([

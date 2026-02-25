@@ -4,6 +4,7 @@ from foodtracker.service import FoodService
 from foodtracker.models import Entry
 from datetime import datetime, date, timedelta, time
 import random
+import os
 
 app = typer.Typer()
 service = FoodService()
@@ -48,7 +49,8 @@ def ui(host: str = "0.0.0.0", port: int = 8787, reload: bool = False):
 def seed_mock(days: int = 14, entries_per_day: int = 4, if_empty: bool = True):
     """Seed mock entries for development."""
     service.init_db()
-    if if_empty and service.list_entries(limit=1):
+    seed_user = service.ensure_user(email=os.getenv("DEV_USER_EMAIL", "dev@local.foodtracker"))
+    if if_empty and service.list_entries(limit=1, user_id=seed_user.id):
         typer.echo("Skipping seed: database already has data.")
         return
 
@@ -82,6 +84,7 @@ def seed_mock(days: int = 14, entries_per_day: int = 4, if_empty: bool = True):
                 confidence=0.85,
                 entry_date=target_day,
                 entry_time=entry_time,
+                user_id=seed_user.id,
             )
             created += 1
 
