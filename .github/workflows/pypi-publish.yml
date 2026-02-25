@@ -47,7 +47,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/project/food-tracker-client/
+      url: https://pypi.org/project/food-tracker-cli/
 
     steps:
       - name: Download distributions

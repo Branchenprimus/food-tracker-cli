@@ -161,10 +161,10 @@ export FOOD_TRACKER_API_BASE='https://kcal-tracker.darwin-labs.org'
 Use:
 
 ```bash
-food-tracker-client me
-food-tracker-client add "Cheeseburger" 650 28 52 35
-food-tracker-client list --limit 5
-food-tracker-client delete 123
+food-tracker-cli me
+food-tracker-cli add "Cheeseburger" 650 28 52 35
+food-tracker-cli list --limit 5
+food-tracker-cli delete 123
 ```
 
 PyPI release automation:
