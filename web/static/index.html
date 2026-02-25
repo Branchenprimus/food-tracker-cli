@@ -183,6 +183,7 @@
                 class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-start gap-3">
                     <div class="flex-1 min-w-0">
+                        <div class="font-medium mb-1 truncate">{{ entry.title }}</div>
                         <div class="grid grid-cols-5 gap-2 text-xs font-semibold">
                             <span class="text-gray-800">{{ formatTime(entry.entry_time) }}</span>
                             <span class="text-green-600">{{ Math.round(entry.kcal) }}</span>
@@ -191,7 +192,7 @@
                             <span class="text-red-600">{{ entry.fat_g.toFixed(1) }}</span>
                         </div>
                         <div class="grid grid-cols-5 gap-2 text-[10px] uppercase tracking-wide mt-1">
-                            <span class="text-gray-500 truncate normal-case tracking-normal">{{ entry.title }}</span>
+                            <span class="text-gray-400">Time</span>
                             <span class="text-gray-400">Kcal</span>
                             <span class="text-gray-400">Prot</span>
                             <span class="text-gray-400">Carb</span>
