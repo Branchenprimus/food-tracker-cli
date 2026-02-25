@@ -43,3 +43,4 @@ jobs:
             APP_VERSION=latest
             APP_COMMIT=${{ github.sha }}
             APP_ENV=prod
+            APP_GIT_REF=${{ github.ref_name }}

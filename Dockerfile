@@ -21,9 +21,11 @@ EXPOSE 8787
 ARG APP_VERSION=dev
 ARG APP_COMMIT=unknown
 ARG APP_ENV=dev
+ARG APP_GIT_REF=dev
 ENV APP_VERSION=${APP_VERSION}
 ENV APP_COMMIT=${APP_COMMIT}
 ENV APP_ENV=${APP_ENV}
+ENV APP_GIT_REF=${APP_GIT_REF}
 
 # Command to run the application
 CMD ["python", "-m", "cli.main", "ui", "--host", "0.0.0.0", "--port", "8787"]

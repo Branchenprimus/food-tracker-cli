@@ -164,10 +164,11 @@
             :href="appInfo.commitUrl || '#'"
             target="_blank"
             rel="noopener noreferrer"
+            :title="appInfo.commitUrl || ''"
             :aria-disabled="!appInfo.commitUrl"
             :class="appInfo.commitUrl ? 'cursor-pointer' : 'pointer-events-none cursor-default'"
             class="fixed bottom-4 right-4 text-[10px] bg-black/80 text-white px-2 py-1 rounded-md font-mono backdrop-blur-sm shadow-sm hover:opacity-100 opacity-60 transition-opacity">
-            {{ appInfo.env }}:{{ appInfo.displayVersion }}
+            {{ appInfo.env }}/{{ appInfo.gitRef }}:{{ appInfo.displayVersion }}
         </a>
     </div>
 
@@ -187,7 +188,7 @@
                         serving_amount: 1.0, confidence: 0.8, entry_time: new Date().toTimeString().substr(0, 5)
                     },
                     chartView: 'week',
-                    appInfo: { version: '...', env: '...', commit: '', displayVersion: '...', commitUrl: '' },
+                    appInfo: { version: '...', env: '...', gitRef: '...', commit: '', displayVersion: '...', commitUrl: '', refUrl: '' },
                     lastChartUpdate: 0,
                     editingEntryId: null,
                     editEntry: null
@@ -416,7 +417,9 @@
                         this.appInfo = {
                             ...info,
                             displayVersion: info.display_version || (shortCommit ? `${info.version}@${shortCommit}` : info.version),
-                            commitUrl: info.commit_url || ''
+                            gitRef: info.git_ref || (info.env === 'dev' ? 'dev' : 'master'),
+                            refUrl: info.ref_url || '',
+                            commitUrl: info.commit_url || info.ref_url || ''
                         }
                     } catch (e) {
                         console.error(e)
