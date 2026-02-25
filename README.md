@@ -44,23 +44,21 @@ python -m cli.main db-init
 ### GitHub Actions
 A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
 
-### Local Development
-- **Run local code (Development)**:
-  ```bash
-  make dev
-  ```
-  Builds from your current source code. Access at [http://localhost:8787](http://localhost:8787).
-
-- **Run production image (Master)**:
-  ```bash
-  make master
-  ```
-  Pulls the latest stable image from GitHub. Used to verify what's running in production.
-
-- **Stop everything**:
-  ```bash
-  make down
-  ```
+### Environment Types
+- **Persistent deployment (`make deploy`)**
+  - Uses `deploy/compose.yml`
+  - Runs as the stable production-like instance
+  - Fixed URL: [http://localhost:8787](http://localhost:8787)
+  - Reserved for external access (for example Cloudflare Tunnel -> `http://192.168.178.38:8787`)
+- **Development (`make dev`)**
+  - Uses `docker-compose.yml`
+  - Builds from your local source tree
+  - Independent URL: [http://localhost:8686](http://localhost:8686)
+  - `make dev` prints the access URL after startup
+  - Must not bind to `8787` so it cannot interfere with the deployed tunnel endpoint
+- **Branch verification**
+  - `make master` was removed
+  - Use CI (GitHub Actions) as the branch verification gate
 
 ### Production Deployment (Raspberry Pi)
 > [!NOTE]
@@ -80,7 +78,7 @@ For production deployment on a Raspberry Pi:
     ```bash
     make deploy
     ```
-    This command starts the `food-tracker` (port 8080) and `watchtower` (auto-updates enabled).
+    This command starts the persistent `food-tracker` on port `8787` and `watchtower` (auto-updates enabled).
 
 3.  **View Logs**:
     ```bash
@@ -89,8 +87,28 @@ For production deployment on a Raspberry Pi:
 
 4.  **Stop**:
     ```bash
-    make down
+    make down-deploy
     ```
+
+### Typical Workflow
+```bash
+# 1) Start or update the persistent deployed instance
+make deploy
+
+# 2) Start a separate development instance
+make dev
+```
+
+Expected URLs:
+- Deploy: [http://localhost:8787](http://localhost:8787)
+- Dev: [http://localhost:8686](http://localhost:8686)
+
+Useful commands:
+- Stop dev: `make down-dev`
+- Stop deploy: `make down-deploy`
+- Dev logs: `make logs-dev`
+- Deploy logs: `make logs-deploy`
+- Backward-compatible alias for stopping dev: `make down`
 
 ## Usage
 
@@ -140,7 +158,9 @@ A wrapper script `food-tracker` is provided for easy access. If you need sudo pe
 ```
 
 ### Web UI
-The Web UI is available at [http://localhost:8787](http://localhost:8787).
+The Web UI is available at:
+- Deploy: [http://localhost:8787](http://localhost:8787)
+- Dev: [http://localhost:8686](http://localhost:8686)
 
 ## Configuration
 
@@ -157,4 +177,3 @@ All commands support a `--json` flag to output structured JSON data instead of f
 ```bash
 python -m cli.main list --json
 ```
-test
