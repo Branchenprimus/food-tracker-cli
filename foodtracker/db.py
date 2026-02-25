@@ -396,15 +396,20 @@ class UserRepo:
         return user
 
     def create_if_missing(self, email: str, is_admin: bool = False) -> UserIdentity:
-        existing = self.get_by_email(email)
+        normalized_email = email.strip().lower()
+        existing = self.get_by_email(normalized_email)
         if existing:
             return existing
         with get_db() as conn:
             conn.execute(
-                "INSERT INTO users (email, is_admin, is_active) VALUES (?, ?, 1)",
-                (email, int(is_admin)),
+                """
+                INSERT INTO users (email, is_admin, is_active)
+                VALUES (?, ?, 1)
+                ON CONFLICT(email) DO NOTHING
+                """,
+                (normalized_email, int(is_admin)),
             )
-        user = self.get_by_email(email)
+        user = self.get_by_email(normalized_email)
         if not user:
             raise RuntimeError("User creation failed")
         return user
