@@ -27,6 +27,7 @@ CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
 CMD_GIT_REF = os.getenv("APP_GIT_REF", "dev" if CMD_ENV == "dev" else "master")
 DEV_USER_EMAIL = os.getenv("DEV_USER_EMAIL", "dev@local.foodtracker")
+ALLOW_LOCAL_FALLBACK_IDENTITY = os.getenv("ALLOW_LOCAL_FALLBACK_IDENTITY", "0") == "1"
 
 
 def _is_valid_email(email: str) -> bool:
@@ -45,6 +46,9 @@ def get_current_user(cf_email: Optional[str] = Header(default=None, alias="CF-Ac
     if cf_email:
         email = cf_email.strip().lower()
     elif CMD_ENV == "dev":
+        email = DEV_USER_EMAIL.lower()
+    elif ALLOW_LOCAL_FALLBACK_IDENTITY:
+        # Optional escape hatch for local deploy-mode testing without Cloudflare Access.
         email = DEV_USER_EMAIL.lower()
     else:
         raise HTTPException(status_code=401, detail="Missing Cloudflare user identity header")
