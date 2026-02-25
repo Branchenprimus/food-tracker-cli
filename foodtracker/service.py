@@ -1,12 +1,13 @@
 from datetime import date, datetime, time, timedelta
 from typing import List, Optional, Dict, Any
-from foodtracker.models import Entry, DailyStats
-from foodtracker.db import EntryRepo, run_migrations
+from foodtracker.models import Entry, DailyStats, GoalSettings
+from foodtracker.db import EntryRepo, SettingsRepo, run_migrations
 from foodtracker.cache import save_cache, load_cache
 
 class FoodService:
     def __init__(self):
         self.repo = EntryRepo()
+        self.settings_repo = SettingsRepo()
 
     def init_db(self):
         """Initialize the database and run migrations."""
@@ -91,6 +92,12 @@ class FoodService:
     def get_stats_history(self, start_date: date, end_date: date) -> List[DailyStats]:
         return self.repo.get_daily_stats_range(start_date, end_date)
 
+    def get_goal_settings(self) -> GoalSettings:
+        return self.settings_repo.get_goal_settings()
+
+    def save_goal_settings(self, settings: GoalSettings) -> GoalSettings:
+        return self.settings_repo.save_goal_settings(settings)
+
     def rebuild_cache(self):
         """Rebuild the widget cache JSON."""
         today = date.today()
@@ -129,4 +136,3 @@ class FoodService:
         }
         
         save_cache(data)
-

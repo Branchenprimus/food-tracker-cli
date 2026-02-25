@@ -77,28 +77,28 @@
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Kcal</div>
                 <div class="text-lg font-bold text-green-600">{{ Math.round(stats.total_kcal) }}</div>
-                <div v-if="goalSettings.enabled && goals.kcal > 0" class="text-[10px] text-gray-500 mt-1">
+                <div v-if="goals.kcal > 0" class="text-[10px] text-gray-500 mt-1">
                     Goal {{ Math.round(goals.kcal) }} ({{ goalPercent(stats.total_kcal, goals.kcal) }}%)
                 </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Prot</div>
                 <div class="text-lg font-bold text-blue-600">{{ stats.total_protein.toFixed(1) }}</div>
-                <div v-if="goalSettings.enabled && goals.protein > 0" class="text-[10px] text-gray-500 mt-1">
+                <div v-if="goals.protein > 0" class="text-[10px] text-gray-500 mt-1">
                     Goal {{ goals.protein.toFixed(1) }} ({{ goalPercent(stats.total_protein, goals.protein) }}%)
                 </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Carb</div>
                 <div class="text-lg font-bold text-yellow-600">{{ stats.total_carbs.toFixed(1) }}</div>
-                <div v-if="goalSettings.enabled && goals.carbs > 0" class="text-[10px] text-gray-500 mt-1">
+                <div v-if="goals.carbs > 0" class="text-[10px] text-gray-500 mt-1">
                     Goal {{ goals.carbs.toFixed(1) }} ({{ goalPercent(stats.total_carbs, goals.carbs) }}%)
                 </div>
             </div>
             <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-xs text-gray-500 uppercase font-medium">Fat</div>
                 <div class="text-lg font-bold text-red-600">{{ stats.total_fat.toFixed(1) }}</div>
-                <div v-if="goalSettings.enabled && goals.fat > 0" class="text-[10px] text-gray-500 mt-1">
+                <div v-if="goals.fat > 0" class="text-[10px] text-gray-500 mt-1">
                     Goal {{ goals.fat.toFixed(1) }} ({{ goalPercent(stats.total_fat, goals.fat) }}%)
                 </div>
             </div>
@@ -110,17 +110,19 @@
                     <h3 class="font-semibold text-gray-800">Goal Settings</h3>
                     <button @click="showSettings = false" class="text-gray-500 hover:text-black text-sm">Close</button>
                 </div>
-                <label class="flex items-center gap-2 mb-3 text-sm">
-                    <input type="checkbox" v-model="goalSettings.enabled">
-                    Enable weight-based macro goals
-                </label>
                 <div class="mb-3">
                     <label class="text-xs text-gray-500 uppercase font-medium">Body Weight (kg)</label>
                     <input type="number" min="30" max="300" step="0.1" v-model.number="goalSettings.bodyWeightKg"
                         class="w-full mt-1 border rounded px-3 py-2">
                 </div>
+                <div class="mb-3">
+                    <label class="text-xs text-gray-500 uppercase font-medium">Weight Loss / Week (kg)</label>
+                    <input type="number" min="0" max="2" step="0.05" v-model.number="goalSettings.weightLossPerWeekKg"
+                        class="w-full mt-1 border rounded px-3 py-2">
+                </div>
                 <div class="text-xs text-gray-500 mb-4">
-                    Formula: kcal=(34x-300), protein=2.2x g, fat=0.8x g, carbs=(18x-300)/4 g
+                    Formula: deficit/day=(kg/week*7700)/7, kcal=(34x-deficit), protein=2.2x g, fat=0.8x g,
+                    carbs=(kcal-(protein*4+fat*9))/4 g
                 </div>
                 <div class="flex gap-2 justify-end">
                     <button @click="showSettings = false"
@@ -240,7 +242,7 @@
                     editingEntryId: null,
                     editEntry: null,
                     showSettings: false,
-                    goalSettings: { enabled: false, bodyWeightKg: null },
+                    goalSettings: { bodyWeightKg: 80, weightLossPerWeekKg: 0.3 },
                     goals: { kcal: 0, protein: 0, carbs: 0, fat: 0 }
                 }
             },
@@ -270,13 +272,15 @@
                     this.cancelEdit()
                     this.fetchData()
                 },
-                loadGoalSettings() {
+                async loadGoalSettings() {
                     try {
-                        const raw = localStorage.getItem('foodTrackerGoalSettings')
-                        if (!raw) return
-                        const parsed = JSON.parse(raw)
-                        this.goalSettings.enabled = Boolean(parsed.enabled)
-                        this.goalSettings.bodyWeightKg = parsed.bodyWeightKg ? Number(parsed.bodyWeightKg) : null
+                        const res = await fetch('/api/settings/goals')
+                        if (!res.ok) return
+                        const parsed = await res.json()
+                        this.goalSettings.bodyWeightKg = parsed.body_weight_kg ? Number(parsed.body_weight_kg) : 80
+                        this.goalSettings.weightLossPerWeekKg = parsed.weight_loss_per_week_kg !== undefined
+                            ? Number(parsed.weight_loss_per_week_kg)
+                            : 0.3
                         this.recalculateGoals()
                     } catch (e) {
                         console.error(e)
@@ -284,20 +288,33 @@
                 },
                 recalculateGoals() {
                     const x = Number(this.goalSettings.bodyWeightKg)
+                    const weeklyLossKg = Number(this.goalSettings.weightLossPerWeekKg)
                     if (!x || x <= 0) {
                         this.goals = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
                         return
                     }
-                    const kcal = Math.max(0, (34 * x) - 300)
+                    const dailyDeficit = Math.max(0, (weeklyLossKg * 7700) / 7)
+                    const kcal = Math.max(0, (34 * x) - dailyDeficit)
                     const protein = 2.2 * x
                     const fat = 0.8 * x
-                    const carbs = Math.max(0, ((18 * x) - 300) / 4)
+                    const carbs = Math.max(0, (kcal - (protein * 4 + fat * 9)) / 4)
                     this.goals = { kcal, protein, carbs, fat }
                 },
-                saveGoalSettings() {
+                async saveGoalSettings() {
                     this.recalculateGoals()
-                    localStorage.setItem('foodTrackerGoalSettings', JSON.stringify(this.goalSettings))
-                    this.showSettings = false
+                    try {
+                        await fetch('/api/settings/goals', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                body_weight_kg: Number(this.goalSettings.bodyWeightKg),
+                                weight_loss_per_week_kg: Number(this.goalSettings.weightLossPerWeekKg)
+                            })
+                        })
+                        this.showSettings = false
+                    } catch (e) {
+                        console.error(e)
+                    }
                 },
                 goalPercent(current, target) {
                     if (!target || target <= 0) return 0
