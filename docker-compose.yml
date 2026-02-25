@@ -1,29 +1,25 @@
 services:
   food-tracker:
-    image: ghcr.io/branchenprimus/food-tracker-cli:dev
+    build:
+      context: .
+      args:
+        APP_VERSION: dev-local
+        APP_COMMIT: local
+        APP_ENV: dev
+        APP_GIT_REF: dev
+    image: food-tracker-dev:local
     container_name: food-tracker-dev
     restart: unless-stopped
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-      - com.centurylinklabs.watchtower.scope=dev
     ports:
       - "8686:8787"
     volumes:
-      - food-data-dev:/root/.local/share/food
+      - food-data-dev:/app/data
     environment:
       - PYTHONUNBUFFERED=1
       - APP_ENV=dev
       - APP_GIT_REF=dev
-
-  watchtower-dev:
-    image: containrrr/watchtower
-    container_name: watchtower-dev
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - DOCKER_API_VERSION=1.44
-    command: --interval 15 --cleanup --label-enable --scope dev food-tracker-dev
+      - FOOD_TRACKER_DB=data/app.db
+      - FOOD_TRACKER_CACHE=data/widget_cache.json
 
 volumes:
   food-data-dev:

@@ -2,7 +2,8 @@ import typer
 import uvicorn
 from foodtracker.service import FoodService
 from foodtracker.models import Entry
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, time
+import random
 
 app = typer.Typer()
 service = FoodService()
@@ -42,6 +43,49 @@ def ui(host: str = "0.0.0.0", port: int = 8787, reload: bool = False):
     typer.echo(f"Starting UI at http://{host}:{port}")
     # Update to point to the new location of the API app
     uvicorn.run("foodtracker.api:app", host=host, port=port, reload=reload)
+
+@app.command()
+def seed_mock(days: int = 14, entries_per_day: int = 4, if_empty: bool = True):
+    """Seed mock entries for development."""
+    service.init_db()
+    if if_empty and service.list_entries(limit=1):
+        typer.echo("Skipping seed: database already has data.")
+        return
+
+    foods = [
+        ("Oats with Berries", 320, 8, 52, 12),
+        ("Greek Yogurt Bowl", 280, 6, 26, 30),
+        ("Chicken Rice Bowl", 640, 16, 74, 48),
+        ("Pasta Bolognese", 710, 22, 78, 38),
+        ("Salmon and Potatoes", 590, 24, 42, 46),
+        ("Protein Shake", 210, 4, 12, 36),
+        ("Banana and Peanut Butter", 330, 14, 31, 10),
+        ("Egg Wrap", 420, 19, 32, 27),
+    ]
+    quarter_hours = [0, 15, 30, 45]
+
+    created = 0
+    start_day = date.today() - timedelta(days=max(days - 1, 0))
+    for day_offset in range(days):
+        target_day = start_day + timedelta(days=day_offset)
+        for _ in range(entries_per_day):
+            title, kcal, fat, carbs, protein = random.choice(foods)
+            factor = random.uniform(0.8, 1.25)
+            entry_time = time(hour=random.randint(7, 21), minute=random.choice(quarter_hours))
+            service.add_entry(
+                title=title,
+                kcal=round(kcal * factor, 1),
+                fat=round(fat * factor, 1),
+                carbs=round(carbs * factor, 1),
+                protein=round(protein * factor, 1),
+                serving=1.0,
+                confidence=0.85,
+                entry_date=target_day,
+                entry_time=entry_time,
+            )
+            created += 1
+
+    typer.echo(f"Seeded {created} mock entries over {days} days.")
 
 if __name__ == "__main__":
     app()

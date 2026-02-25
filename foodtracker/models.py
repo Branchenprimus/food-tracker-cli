@@ -30,3 +30,8 @@ class DailyStats(BaseModel):
     total_carbs: float
     total_fat: float
     entry_count: int
+
+
+class GoalSettings(BaseModel):
+    body_weight_kg: float = Field(default=80.0, gt=0)
+    weight_loss_per_week_kg: float = Field(default=0.3, ge=0)

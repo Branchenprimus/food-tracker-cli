@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Header
 from typing import Optional, List, Dict, Any
 from datetime import date
 from foodtracker.service import FoodService
-from foodtracker.models import Entry, DailyStats
+from foodtracker.models import Entry, DailyStats, GoalSettings
 from foodtracker.cache import load_cache
 
 app = FastAPI()
@@ -99,6 +99,14 @@ def get_streak():
 @app.get("/api/stats/history", response_model=List[DailyStats])
 def get_history(start: date, end: date):
     return service.get_stats_history(start, end)
+
+@app.get("/api/settings/goals", response_model=GoalSettings)
+def get_goal_settings():
+    return service.get_goal_settings()
+
+@app.put("/api/settings/goals", response_model=GoalSettings)
+def put_goal_settings(settings: GoalSettings):
+    return service.save_goal_settings(settings)
 
 # In-memory cache with mtime tracking
 _cache_data: Optional[Dict[str, Any]] = None

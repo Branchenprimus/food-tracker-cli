@@ -1,10 +1,11 @@
 import sqlite3
 import os
+import json
 from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Generator
 from contextlib import contextmanager
-from foodtracker.models import Entry, DailyStats
+from foodtracker.models import Entry, DailyStats, GoalSettings
 
 # Default DB Path - can be overridden by env var
 DB_PATH = Path(os.getenv("FOOD_TRACKER_DB", "data/app.db"))
@@ -22,10 +23,12 @@ def create_connection() -> sqlite3.Connection:
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     
-    # Performance and integrity pragmas
+    # Durability and integrity pragmas.
+    # FULL gives stronger guarantees against power-loss at the cost of some write speed.
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
-    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA synchronous=FULL;")
+    conn.execute("PRAGMA busy_timeout=5000;")
     
     # Return rows as dictionaries (optional, but useful)
     conn.row_factory = sqlite3.Row
@@ -61,6 +64,10 @@ def run_migrations():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_date ON entries(date);
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
     """
     with get_db() as conn:
         conn.executescript(schema)
@@ -228,3 +235,33 @@ class EntryRepo:
             entry_date=datetime.strptime(row['date'], "%Y-%m-%d").date(),
             entry_time=datetime.strptime(row['time'], "%H:%M").time()
         )
+
+
+class SettingsRepo:
+    GOAL_SETTINGS_KEY = "goal_settings"
+
+    def get_goal_settings(self) -> GoalSettings:
+        query = "SELECT value FROM settings WHERE key = ?"
+        with get_db() as conn:
+            row = conn.execute(query, (self.GOAL_SETTINGS_KEY,)).fetchone()
+            if not row:
+                return GoalSettings()
+            try:
+                raw = json.loads(row["value"])
+            except (TypeError, json.JSONDecodeError):
+                return GoalSettings()
+            return GoalSettings(
+                body_weight_kg=float(raw.get("body_weight_kg", 80.0)),
+                weight_loss_per_week_kg=float(raw.get("weight_loss_per_week_kg", 0.3)),
+            )
+
+    def save_goal_settings(self, settings: GoalSettings) -> GoalSettings:
+        query = """
+        INSERT INTO settings (key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value=excluded.value
+        """
+        payload = settings.model_dump(mode="json")
+        with get_db() as conn:
+            conn.execute(query, (self.GOAL_SETTINGS_KEY, json.dumps(payload)))
+        return settings
