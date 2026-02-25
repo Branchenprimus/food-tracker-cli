@@ -348,14 +348,8 @@
                     let labels = []
 
                     if (this.chartView === 'day') {
-                        // For day view, we use the already fetched entries
-                        // Sort entries by time
-                        const sortedEntries = [...this.entries].sort((a, b) => a.entry_time.localeCompare(b.entry_time))
-
-                        // We need to shape this data for the chart
-                        // We will just pass the raw entries to renderChart and handle it there
-                        // But we want to simulate the same structure if possible or handle it explicitly
-                        this.renderChart(sortedEntries, null, null, 'day')
+                        // Day view is aggregated for the selected date (no timestamp buckets).
+                        this.renderChart(this.stats, null, null, 'day')
                         return
                     }
 
@@ -392,14 +386,11 @@
                     let fat = []
 
                     if (mode === 'day') {
-                        // Data is list of entries
-                        data.forEach(entry => {
-                            labels.push(entry.entry_time.substr(0, 5)) // HH:MM
-                            kcal.push(entry.kcal)
-                            protein.push(entry.protein_g)
-                            carbs.push(entry.carbs_g)
-                            fat.push(entry.fat_g)
-                        })
+                        labels.push('Day Total')
+                        kcal.push(data.total_kcal || 0)
+                        protein.push(data.total_protein || 0)
+                        carbs.push(data.total_carbs || 0)
+                        fat.push(data.total_fat || 0)
                     } else {
                         const statsMap = {}
                         data.forEach(d => statsMap[d.date] = d)
