@@ -44,7 +44,7 @@ python -m cli.main init-db
 See [SETUP.md](SETUP.md) for Cloudflare Access setup and API key integration.
 
 ### GitHub Actions
-A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** for deployment.
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It builds and pushes an arm64 deployment image (optimized for Raspberry Pi) to **GitHub Container Registry (ghcr.io)** for faster production rollout.
 
 ### Environment Types
 - **Persistent deployment (`make deploy`)**

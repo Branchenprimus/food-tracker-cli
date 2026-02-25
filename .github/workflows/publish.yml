@@ -6,6 +6,10 @@ on:
       - master
   workflow_dispatch:
 
+concurrency:
+  group: publish-master
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -42,18 +46,20 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=sha
-            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
+          # Deploy target is Raspberry Pi (arm64), so build arm64 only for faster publish.
+          platforms: linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=deploy-image
+          cache-to: type=gha,mode=max,scope=deploy-image
+          provenance: false
+          sbom: false
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
             APP_COMMIT=${{ github.sha }}
