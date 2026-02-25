@@ -23,7 +23,7 @@ def get_info():
     has_commit = bool(CMD_COMMIT and CMD_COMMIT != "unknown")
     short_commit = CMD_COMMIT[:7] if has_commit else CMD_COMMIT
     ref_url = f"https://github.com/{CMD_REPOSITORY}/tree/{CMD_GIT_REF}"
-    commit_url = f"https://github.com/{CMD_REPOSITORY}/commit/{CMD_COMMIT}?branch={CMD_GIT_REF}" if has_commit else ref_url
+    commit_url = f"https://github.com/{CMD_REPOSITORY}/tree/{CMD_COMMIT}" if has_commit else ref_url
     return {
         "version": CMD_VERSION,
         "env": CMD_ENV,

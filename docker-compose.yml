@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     labels:
       - com.centurylinklabs.watchtower.enable=true
+      - com.centurylinklabs.watchtower.scope=dev
     ports:
       - "8686:8787"
     volumes:
@@ -22,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DOCKER_API_VERSION=1.44
-    command: --interval 60 --cleanup --label-enable food-tracker-dev
+    command: --interval 15 --cleanup --label-enable --scope dev food-tracker-dev
 
 volumes:
   food-data-dev:

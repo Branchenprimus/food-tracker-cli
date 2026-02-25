@@ -53,7 +53,7 @@ A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatica
 - **Development (`make dev`)**
   - Uses `docker-compose.yml`
   - Pulls `ghcr.io/branchenprimus/food-tracker-cli:dev`
-  - Starts a dedicated `watchtower-dev` that auto-updates when new `dev` images are published
+  - Starts a dedicated `watchtower-dev` that auto-updates when new `dev` images are published (15s polling interval)
   - Independent URL: [http://localhost:8686](http://localhost:8686)
   - `make dev` prints the access URL after startup
   - Must not bind to `8787` so it cannot interfere with the deployed tunnel endpoint

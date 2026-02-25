@@ -129,6 +129,8 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
+                        <button @click="duplicateEntry(entry)"
+                            class="text-xs font-medium text-gray-600 hover:text-black border border-gray-200 hover:border-gray-400 px-2 py-1 rounded-md transition">Duplicate</button>
                         <button @click="startEdit(entry)"
                             class="text-xs font-medium text-gray-600 hover:text-black border border-gray-200 hover:border-gray-400 px-2 py-1 rounded-md transition">Edit</button>
                         <button @click="deleteEntry(entry.id)"
@@ -371,6 +373,24 @@
                         }
                         this.fetchData()
                     }
+                },
+                async duplicateEntry(entry) {
+                    await fetch('/api/entries', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: entry.title,
+                            kcal: entry.kcal || 0,
+                            protein_g: entry.protein_g || 0,
+                            carbs_g: entry.carbs_g || 0,
+                            fat_g: entry.fat_g || 0,
+                            serving_amount: entry.serving_amount || 1.0,
+                            confidence: entry.confidence || 0.8,
+                            entry_date: this.currentDate,
+                            entry_time: this.formatTime(entry.entry_time),
+                        })
+                    })
+                    this.fetchData()
                 },
                 startEdit(entry) {
                     this.showAdd = false
