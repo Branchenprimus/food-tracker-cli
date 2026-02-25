@@ -29,10 +29,6 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <button @click="showSettings = true"
-                    class="px-2 py-1 text-xs font-medium border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition">
-                    Goals
-                </button>
                 <button @click="changeDate(-1)" class="p-1 hover:bg-gray-200 rounded-full transition text-gray-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -53,7 +49,13 @@
         <!-- Chart Section -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-gray-700">Trends</h2>
+                <div class="flex items-center gap-2">
+                    <h2 class="font-bold text-gray-700">Trends</h2>
+                    <button @click="showSettings = true"
+                        class="px-2 py-1 text-xs font-medium border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition">
+                        Goals
+                    </button>
+                </div>
                 <div class="flex bg-gray-100 rounded-lg p-1">
                     <button @click="setChartView('day')" :class="{'bg-white shadow-sm': chartView === 'day'}"
                         class="px-3 py-1 text-xs font-medium rounded-md transition">Day</button>
