@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class Entry(BaseModel):
     id: Optional[int] = None
+    user_id: Optional[int] = None
     title: str
     serving_amount: float = Field(default=1.0, gt=0)
     kcal: float = Field(ge=0)
@@ -35,3 +36,43 @@ class DailyStats(BaseModel):
 class GoalSettings(BaseModel):
     body_weight_kg: float = Field(default=80.0, gt=0)
     weight_loss_per_week_kg: float = Field(default=0.3, ge=0)
+
+
+class UserIdentity(BaseModel):
+    id: int
+    email: str
+    is_admin: bool = False
+    is_active: bool = True
+
+
+class APIKeyRecord(BaseModel):
+    id: int
+    name: str
+    key_prefix: str
+    is_active: bool
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+
+class APIKeyCreateRequest(BaseModel):
+    name: str = Field(default="OpenClaw")
+    expires_in_days: Optional[int] = Field(default=None, ge=1, le=3650)
+
+
+class APIKeyCreateResponse(BaseModel):
+    id: int
+    name: str
+    api_key: str
+    key_prefix: str
+
+
+class UserUpsertRequest(BaseModel):
+    email: str
+    is_admin: bool = False
+    is_active: bool = True
+
+
+class UserUpdateRequest(BaseModel):
+    is_admin: Optional[bool] = None
+    is_active: Optional[bool] = None

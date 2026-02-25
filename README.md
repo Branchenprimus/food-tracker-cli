@@ -41,6 +41,8 @@ python -m cli.main db-init
 
 ## Deployment
 
+See [SETUP.md](SETUP.md) for Cloudflare Access setup, multi-user admin flow, and OpenClaw API key integration.
+
 ### GitHub Actions
 A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
 

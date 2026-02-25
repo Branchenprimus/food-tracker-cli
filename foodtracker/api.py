@@ -1,12 +1,21 @@
 import os
 import json
+import re
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Depends
 from typing import Optional, List, Dict, Any
-from datetime import date
+from datetime import date, datetime, timedelta
 from foodtracker.service import FoodService
-from foodtracker.models import Entry, DailyStats, GoalSettings
+from foodtracker.models import (
+    Entry,
+    DailyStats,
+    GoalSettings,
+    UserIdentity,
+    APIKeyRecord,
+    APIKeyCreateRequest,
+    APIKeyCreateResponse,
+)
 from foodtracker.cache import load_cache
 
 app = FastAPI()
@@ -17,6 +26,34 @@ CMD_ENV = os.getenv("APP_ENV", "dev")
 CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
 CMD_GIT_REF = os.getenv("APP_GIT_REF", "dev" if CMD_ENV == "dev" else "master")
+DEV_USER_EMAIL = os.getenv("DEV_USER_EMAIL", "dev@local.foodtracker")
+
+
+def _is_valid_email(email: str) -> bool:
+    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email))
+
+
+def _extract_api_key(authorization: Optional[str], x_api_key: Optional[str]) -> Optional[str]:
+    if x_api_key:
+        return x_api_key.strip()
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.removeprefix("Bearer ").strip()
+    return None
+
+
+def get_current_user(cf_email: Optional[str] = Header(default=None, alias="CF-Access-Authenticated-User-Email")) -> UserIdentity:
+    if cf_email:
+        email = cf_email.strip().lower()
+    elif CMD_ENV == "dev":
+        email = DEV_USER_EMAIL.lower()
+    else:
+        raise HTTPException(status_code=401, detail="Missing Cloudflare user identity header")
+
+    if not _is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Invalid user email in Cloudflare header")
+
+    user = service.ensure_user(email=email)
+    return user
 
 @app.get("/api/info")
 def get_info():
@@ -43,13 +80,13 @@ def read_root():
 
 # Existing API endpoints (using Service -> DB)
 @app.get("/api/entries", response_model=List[Entry])
-def get_entries(date: Optional[date] = None):
+def get_entries(date: Optional[date] = None, user: UserIdentity = Depends(get_current_user)):
     if date:
-        return service.list_entries(from_date=date, to_date=date, limit=1000)
-    return service.list_entries(limit=100)
+        return service.list_entries(from_date=date, to_date=date, limit=1000, user_id=user.id)
+    return service.list_entries(limit=100, user_id=user.id)
 
 @app.post("/api/entries", response_model=Entry)
-def add_entry(entry: Entry):
+def add_entry(entry: Entry, user: UserIdentity = Depends(get_current_user)):
     return service.add_entry(
         title=entry.title,
         kcal=entry.kcal,
@@ -59,13 +96,15 @@ def add_entry(entry: Entry):
         serving=entry.serving_amount,
         confidence=entry.confidence,
         entry_date=entry.entry_date,
-        entry_time=entry.entry_time
+        entry_time=entry.entry_time,
+        user_id=user.id
     )
 
 @app.put("/api/entries/{entry_id}", response_model=Entry)
-def update_entry(entry_id: int, entry: Entry):
+def update_entry(entry_id: int, entry: Entry, user: UserIdentity = Depends(get_current_user)):
     updated = service.update_entry(
         entry_id,
+        user_id=user.id,
         title=entry.title,
         kcal=entry.kcal,
         fat_g=entry.fat_g,
@@ -81,32 +120,65 @@ def update_entry(entry_id: int, entry: Entry):
     return updated
 
 @app.delete("/api/entries/{entry_id}")
-def delete_entry(entry_id: int):
-    success = service.delete_entry(entry_id)
+def delete_entry(entry_id: int, user: UserIdentity = Depends(get_current_user)):
+    success = service.delete_entry(entry_id, user_id=user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"status": "success"}
 
 @app.get("/api/stats/day", response_model=DailyStats)
-def get_daily_stats(date: Optional[date] = None):
-    return service.get_daily_summary(date)
+def get_daily_stats(date: Optional[date] = None, user: UserIdentity = Depends(get_current_user)):
+    return service.get_daily_summary(date, user_id=user.id)
 
 @app.get("/api/stats/streak")
-def get_streak():
-    streak = service.get_current_streak()
+def get_streak(user: UserIdentity = Depends(get_current_user)):
+    streak = service.get_current_streak(user_id=user.id)
     return {"streak": streak}
 
 @app.get("/api/stats/history", response_model=List[DailyStats])
-def get_history(start: date, end: date):
-    return service.get_stats_history(start, end)
+def get_history(start: date, end: date, user: UserIdentity = Depends(get_current_user)):
+    return service.get_stats_history(start, end, user_id=user.id)
 
 @app.get("/api/settings/goals", response_model=GoalSettings)
-def get_goal_settings():
-    return service.get_goal_settings()
+def get_goal_settings(user: UserIdentity = Depends(get_current_user)):
+    return service.get_goal_settings(user_id=user.id)
 
 @app.put("/api/settings/goals", response_model=GoalSettings)
-def put_goal_settings(settings: GoalSettings):
-    return service.save_goal_settings(settings)
+def put_goal_settings(settings: GoalSettings, user: UserIdentity = Depends(get_current_user)):
+    return service.save_goal_settings(user_id=user.id, settings=settings)
+
+
+@app.get("/api/me", response_model=UserIdentity)
+def get_me(user: UserIdentity = Depends(get_current_user)):
+    return user
+
+
+@app.get("/api/settings/api-keys", response_model=List[APIKeyRecord])
+def list_api_keys(user: UserIdentity = Depends(get_current_user)):
+    return service.list_api_keys(user.id)
+
+
+@app.post("/api/settings/api-keys", response_model=APIKeyCreateResponse)
+def create_api_key(payload: APIKeyCreateRequest, user: UserIdentity = Depends(get_current_user)):
+    record, raw_key = service.create_api_key(
+        user_id=user.id,
+        name=payload.name,
+        expires_in_days=payload.expires_in_days,
+    )
+    return APIKeyCreateResponse(
+        id=record.id,
+        name=record.name,
+        api_key=raw_key,
+        key_prefix=record.key_prefix,
+    )
+
+
+@app.delete("/api/settings/api-keys/{key_id}")
+def revoke_api_key(key_id: int, user: UserIdentity = Depends(get_current_user)):
+    if not service.revoke_api_key(user_id=user.id, key_id=key_id):
+        raise HTTPException(status_code=404, detail="API key not found")
+    return {"status": "success"}
+
 
 # In-memory cache with mtime tracking
 _cache_data: Optional[Dict[str, Any]] = None
@@ -147,23 +219,53 @@ def _load_cache_if_changed() -> Dict[str, Any]:
     _cache_mtime = mtime
     return data
 
-def _auth(authorization: Optional[str]) -> None:
-    if not AUTH_TOKEN:
-        return  # auth disabled
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    token = authorization.removeprefix("Bearer ").strip()
-    if token != AUTH_TOKEN:
-        raise HTTPException(status_code=403, detail="Invalid token")
+def _auth(authorization: Optional[str], x_api_key: Optional[str]) -> Optional[int]:
+    token = _extract_api_key(authorization=authorization, x_api_key=x_api_key)
+    if token:
+        auth = service.authenticate_api_key(token)
+        if not auth:
+            raise HTTPException(status_code=403, detail="Invalid API key")
+        _, user_id = auth
+        return user_id
+    if AUTH_TOKEN:
+        if authorization and authorization.startswith("Bearer "):
+            legacy = authorization.removeprefix("Bearer ").strip()
+            if legacy == AUTH_TOKEN:
+                return None
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    return None
 
 @app.get("/v1/widget/today")
-def widget_today(authorization: Optional[str] = Header(default=None)):
+def widget_today(
+    authorization: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
     """
     Get cached widget data.
     This endpoint does NO DB calls.
     It reads from the JSON cache file or memory.
     """
-    _auth(authorization)
-    data = _load_cache_if_changed()
-    # Response is already JSON serializable; return as-is
-    return JSONResponse(content=data)
+    user_id = _auth(authorization, x_api_key)
+    if user_id is None:
+        data = _load_cache_if_changed()
+        return JSONResponse(content=data)
+
+    today = date.today()
+    day_stats = service.get_daily_summary(today, user_id=user_id)
+    week_start = today - timedelta(days=6)
+    week_history = service.get_stats_history(week_start, today, user_id=user_id)
+    week_stats = {
+        "total_kcal": sum(d.total_kcal for d in week_history),
+        "total_protein": sum(d.total_protein for d in week_history),
+        "total_carbs": sum(d.total_carbs for d in week_history),
+        "total_fat": sum(d.total_fat for d in week_history),
+        "days_tracked": len(week_history),
+    }
+    payload = {
+        "generated_at": datetime.now().isoformat(),
+        "timezone": "Europe/Berlin",
+        "day": day_stats.model_dump(mode="json"),
+        "week": week_stats,
+        "streak": service.get_current_streak(user_id=user_id),
+    }
+    return JSONResponse(content=payload)
