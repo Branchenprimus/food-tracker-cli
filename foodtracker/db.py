@@ -447,6 +447,10 @@ class ApiKeyRepo:
         return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
     def create_key(self, user_id: int, name: str, expires_at: Optional[datetime] = None) -> Tuple[APIKeyRecord, str]:
+        # Enforce exactly one key per user by removing all previous keys first.
+        with get_db() as conn:
+            conn.execute("DELETE FROM api_keys WHERE user_id=?", (user_id,))
+
         raw_key = f"ftk_{secrets.token_urlsafe(32)}"
         key_hash = self._hash_key(raw_key)
         key_prefix = raw_key[:10]
