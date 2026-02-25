@@ -1,15 +1,128 @@
 #!/bin/bash
-# Wrapper script for Food Tracker CLI
+# Wrapper script for Food Tracker CLI/API
 # Usage: ./food-tracker [command] [args...]
 
-# Check if docker compose is available
-if ! command -v docker &> /dev/null; then
-    echo "Error: docker command not found."
+set -euo pipefail
+
+API_BASE="${FOOD_TRACKER_API_BASE:-http://localhost:8787}"
+API_KEY="${FOOD_TRACKER_API_KEY:-}"
+
+usage() {
+    cat <<EOF
+Usage: ./food-tracker <command> [args]
+
+Commands (API mode if FOOD_TRACKER_API_KEY is set):
+  add <title> <kcal> <fat> <carbs> <protein> [serving] [confidence]
+  list [limit]
+  delete <entry_id>
+
+All other commands are forwarded to local container CLI.
+EOF
+}
+
+api_call() {
+    local method="$1"
+    local path="$2"
+    local data="${3:-}"
+    local body_file
+    local status
+    if [[ -z "$API_KEY" ]]; then
+        echo "Error: FOOD_TRACKER_API_KEY is not set." >&2
+        exit 1
+    fi
+    body_file="$(mktemp)"
+    if [[ -n "$data" ]]; then
+        status="$(curl -sS -o "$body_file" -w "%{http_code}" -X "$method" "$API_BASE$path" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: $API_KEY" \
+            -d "$data")"
+    else
+        status="$(curl -sS -o "$body_file" -w "%{http_code}" -X "$method" "$API_BASE$path" \
+            -H "X-API-Key: $API_KEY")"
+    fi
+    if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+        echo "API request failed: $method $path (HTTP $status)" >&2
+        cat "$body_file" >&2
+        rm -f "$body_file"
+        exit 1
+    fi
+    cat "$body_file"
+    rm -f "$body_file"
+}
+
+if [[ $# -eq 0 ]]; then
+    usage
     exit 1
 fi
 
-# Run the command inside the container
-# We use -T to disable pseudo-tty allocation if needed, but for interactive use we usually want it.
-# However, for agents/scripts, strictly speaking we might not need a TTY.
-# Let's keep it simple: exec passing all args.
-docker compose --env-file .env -f deploy/compose.yml exec food-tracker python -m cli.main "$@"
+cmd="$1"
+shift
+
+# If key is present, use authenticated API flow for agent-relevant data ops.
+if [[ -n "$API_KEY" ]]; then
+    case "$cmd" in
+        add)
+            if [[ $# -lt 5 ]]; then
+                echo "Error: add requires <title> <kcal> <fat> <carbs> <protein> [serving] [confidence]" >&2
+                exit 1
+            fi
+            title="$1"
+            kcal="$2"
+            fat="$3"
+            carbs="$4"
+            protein="$5"
+            serving="${6:-1.0}"
+            confidence="${7:-0.7}"
+            today="$(date +%F)"
+            now_hm="$(date +%H:%M)"
+            payload="$(python3 - "$title" "$kcal" "$fat" "$carbs" "$protein" "$serving" "$confidence" "$today" "$now_hm" <<'PY'
+import json
+import sys
+title, kcal, fat, carbs, protein, serving, confidence, day, hm = sys.argv[1:]
+print(json.dumps({
+    "title": title,
+    "kcal": float(kcal),
+    "fat_g": float(fat),
+    "carbs_g": float(carbs),
+    "protein_g": float(protein),
+    "serving_amount": float(serving),
+    "confidence": float(confidence),
+    "entry_date": day,
+    "entry_time": hm,
+}))
+PY
+)"
+            resp="$(api_call POST "/api/entries" "$payload")"
+            python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"Added entry: {d.get('title')} ({d.get('kcal')} kcal) [id={d.get('id')}]\")" <<<"$resp"
+            exit 0
+            ;;
+        list)
+            limit="${1:-10}"
+            resp="$(api_call GET "/api/entries")"
+            python3 -c "import json,sys; limit=int(sys.argv[1]); rows=json.load(sys.stdin); [print(f\"[{e.get('id')}] {e.get('entry_date')} {e.get('entry_time')} - {e.get('title')}: {e.get('kcal')} kcal\") for e in rows[:limit]]" "$limit" <<<"$resp"
+            exit 0
+            ;;
+        delete)
+            if [[ $# -ne 1 ]]; then
+                echo "Error: delete requires <entry_id>" >&2
+                exit 1
+            fi
+            entry_id="$1"
+            resp="$(api_call DELETE "/api/entries/$entry_id")"
+            if echo "$resp" | grep -q '"status":"success"'; then
+                echo "Deleted entry $entry_id"
+            else
+                echo "$resp"
+                exit 1
+            fi
+            exit 0
+            ;;
+    esac
+fi
+
+# Fallback: run command inside deploy container CLI.
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: docker command not found." >&2
+    exit 1
+fi
+docker compose --env-file .env -f deploy/compose.yml exec food-tracker python -m cli.main "$cmd" "$@"

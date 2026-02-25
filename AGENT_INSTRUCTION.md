@@ -23,6 +23,7 @@ Expected real-world flow:
 
 Recommended env var:
 - `FOOD_TRACKER_API_KEY=ftk_...`
+- `FOOD_TRACKER_API_BASE=http://localhost:8787` (optional override)
 
 ## Authentication Behavior
 
@@ -69,3 +70,7 @@ curl 'http://localhost:8686/api/entries?date=2026-02-25' -H "X-API-Key: $FOOD_TR
 
 The local Typer CLI in `cli/main.py` exists for local admin/dev operations (`init-db`, `add`, `list`, `delete`, `ui`, `seed-mock`).
 It writes via service/db internals and is not the recommended auth boundary for agent integrations.
+
+Wrapper behavior:
+- `./food-tracker add/list/delete` uses authenticated `/api/*` calls when `FOOD_TRACKER_API_KEY` is set.
+- This ensures entries are stored under the API key user and visible in that user's UI.
