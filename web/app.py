@@ -16,18 +16,22 @@ CMD_VERSION = os.getenv("APP_VERSION", "dev")
 CMD_ENV = os.getenv("APP_ENV", "dev")
 CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
 CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
+CMD_GIT_REF = os.getenv("APP_GIT_REF", "dev" if CMD_ENV == "dev" else "master")
 
 @app.get("/api/info")
 def get_info():
     has_commit = bool(CMD_COMMIT and CMD_COMMIT != "unknown")
     short_commit = CMD_COMMIT[:7] if has_commit else CMD_COMMIT
-    commit_url = f"https://github.com/{CMD_REPOSITORY}/commit/{CMD_COMMIT}" if has_commit else ""
+    ref_url = f"https://github.com/{CMD_REPOSITORY}/tree/{CMD_GIT_REF}"
+    commit_url = f"https://github.com/{CMD_REPOSITORY}/commit/{CMD_COMMIT}?branch={CMD_GIT_REF}" if has_commit else ref_url
     return {
         "version": CMD_VERSION,
         "env": CMD_ENV,
         "commit": CMD_COMMIT,
+        "git_ref": CMD_GIT_REF,
         "display_version": f"{CMD_VERSION}@{short_commit}" if short_commit else CMD_VERSION,
-        "commit_url": commit_url
+        "commit_url": commit_url,
+        "ref_url": ref_url
     }
 
 # Serve static files

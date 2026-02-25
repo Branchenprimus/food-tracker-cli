@@ -60,3 +60,4 @@ jobs:
             APP_VERSION=${{ steps.meta.outputs.version }}
             APP_COMMIT=${{ github.sha }}
             APP_ENV=${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+            APP_GIT_REF=${{ github.ref_name }}
