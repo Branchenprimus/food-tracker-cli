@@ -22,10 +22,12 @@ def create_connection() -> sqlite3.Connection:
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     
-    # Performance and integrity pragmas
+    # Durability and integrity pragmas.
+    # FULL gives stronger guarantees against power-loss at the cost of some write speed.
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
-    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA synchronous=FULL;")
+    conn.execute("PRAGMA busy_timeout=5000;")
     
     # Return rows as dictionaries (optional, but useful)
     conn.row_factory = sqlite3.Row

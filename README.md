@@ -48,12 +48,14 @@ A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatica
 - **Persistent deployment (`make deploy`)**
   - Uses `deploy/compose.yml`
   - Runs as the stable production-like instance
+  - Persists DB/cache via bind mount `./data:/app/data` (`data/app.db`, `data/widget_cache.json` inside container)
   - Fixed URL: [http://localhost:8787](http://localhost:8787)
   - Reserved for external access (for example Cloudflare Tunnel -> `http://192.168.178.38:8787`)
 - **Development (`make dev`)**
   - Uses `docker-compose.yml`
   - Pulls `ghcr.io/branchenprimus/food-tracker-cli:dev`
   - Starts a dedicated `watchtower-dev` that auto-updates when new `dev` images are published (15s polling interval)
+  - Persists DB/cache in docker volume `food-data-dev` at `/app/data` (`data/app.db`, `data/widget_cache.json` inside container)
   - Independent URL: [http://localhost:8686](http://localhost:8686)
   - `make dev` prints the access URL after startup
   - Must not bind to `8787` so it cannot interfere with the deployed tunnel endpoint
