@@ -42,7 +42,7 @@ python -m cli.main db-init
 ## Deployment
 
 ### GitHub Actions
-A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master` and `dev`.
 
 ### Environment Types
 - **Persistent deployment (`make deploy`)**
@@ -52,10 +52,14 @@ A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatica
   - Reserved for external access (for example Cloudflare Tunnel -> `http://192.168.178.38:8787`)
 - **Development (`make dev`)**
   - Uses `docker-compose.yml`
-  - Builds from your local source tree
+  - Pulls `ghcr.io/branchenprimus/food-tracker-cli:dev`
+  - Starts a dedicated `watchtower-dev` that auto-updates when new `dev` images are published
   - Independent URL: [http://localhost:8686](http://localhost:8686)
   - `make dev` prints the access URL after startup
   - Must not bind to `8787` so it cannot interfere with the deployed tunnel endpoint
+- **Local development build (`make dev-local`)**
+  - Builds from your local source tree
+  - Use this when testing unpushed local code
 - **Branch verification**
   - `make master` was removed
   - Use CI (GitHub Actions) as the branch verification gate
@@ -100,6 +104,8 @@ make deploy
 make dev
 ```
 
+`make dev` only needs to be run once initially. After that, pushes to `dev` publish a new `:dev` image and `watchtower-dev` updates automatically.
+
 Expected URLs:
 - Deploy: [http://localhost:8787](http://localhost:8787)
 - Dev: [http://localhost:8686](http://localhost:8686)
@@ -107,6 +113,7 @@ Expected URLs:
 Useful commands:
 - Stop dev: `make down-dev`
 - Stop deploy: `make down-deploy`
+- Build and run local source (no registry image): `make dev-local`
 - Dev logs: `make logs-dev`
 - Deploy logs: `make logs-deploy`
 - Backward-compatible alias for stopping dev: `make down`
