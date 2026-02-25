@@ -7,7 +7,9 @@ Create a beautiful, large-size iOS widget using the **Scriptable** app. The widg
 ## API Specification
 
 - **Endpoint**: `GET <HOST>/v1/widget/today`
-- **Authentication**: `Authorization: Bearer <TOKEN>` (if configured)
+- **Authentication (preferred)**: `X-API-Key: <APP_GENERATED_KEY>`
+- **Alternative**: `Authorization: Bearer <APP_GENERATED_KEY>`
+- **Legacy fallback**: `Authorization: Bearer <WIDGET_API_TOKEN>` (only if `WIDGET_API_TOKEN` is configured)
 - **Response Format**:
   ```json
   {
@@ -34,7 +36,8 @@ Create a beautiful, large-size iOS widget using the **Scriptable** app. The widg
 ### 1. Data Fetching
 
 - Fetch data from the API with a timeout (e.g., 3s).
-- Use `Keychain` or a config variable to store the `HOST` and `TOKEN`.
+- Use `Keychain` or a config variable to store the `HOST` and auth secret.
+- Use `Keychain` or a config variable to store the `HOST` and `API key`.
 - **Offline Handling**: If the request fails, load the last successful response from `FileManager` (local cache) and show a "stale data" indicator (e.g., grayed out or a small warning icon).
 
 ### 2. Visualization
@@ -66,7 +69,7 @@ Create a beautiful, large-size iOS widget using the **Scriptable** app. The widg
   ```javascript
   const config = {
     baseUrl: "http://<YOUR_PI_IP>:8787",
-    token: "bRErAjUmwsnoujll8YJaWMK0nXV1yIYbV4OB1lQLUjc=",
+    apiKey: "ftk_...",
     targetKcal: 2500,
   };
   ```
