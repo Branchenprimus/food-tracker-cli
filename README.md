@@ -44,7 +44,7 @@ python -m cli.main init-db
 See [SETUP.md](SETUP.md) for Cloudflare Access setup and API key integration.
 
 ### GitHub Actions
-A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** for deployment.
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It builds and pushes an arm64 deployment image (optimized for Raspberry Pi) to **GitHub Container Registry (ghcr.io)** for faster production rollout.
 
 ### Environment Types
 - **Persistent deployment (`make deploy`)**
@@ -143,6 +143,40 @@ python -m cli.main ui --host 0.0.0.0 --port 8787
 python -m cli.main seed-mock --if-empty
 ```
 
+### Standalone Client (pipx)
+
+For OpenClaw users who should not clone this repo, install the API client via pipx:
+
+```bash
+pipx install "git+https://github.com/Branchenprimus/food-tracker-cli.git"
+```
+
+Then configure key + endpoint:
+
+```bash
+export FOOD_TRACKER_API_KEY='ftk_...'
+export FOOD_TRACKER_API_BASE='https://kcal-tracker.darwin-labs.org'
+```
+
+Use:
+
+```bash
+food-tracker-cli me
+food-tracker-cli add "Cheeseburger" 650 28 52 35
+food-tracker-cli list --limit 5
+food-tracker-cli delete 123
+```
+
+PyPI release automation:
+- Workflow: `.github/workflows/pypi-publish.yml`
+- Trigger: push tag `v*` (for example `v2.1.0`)
+- Auth: PyPI Trusted Publisher (OIDC), no PyPI token required.
+- Configure on PyPI project:
+  - Owner: `Branchenprimus`
+  - Repository: `food-tracker-cli`
+  - Workflow: `pypi-publish.yml`
+  - Environment: `pypi`
+
 ### Web UI
 The Web UI is available at:
 - Deploy: [http://localhost:8787](http://localhost:8787)
@@ -170,3 +204,8 @@ For external agents, prefer HTTP API calls instead of direct local CLI DB writes
 Notes:
 - One API key per user is enforced. Generating a new key revokes/removes old keys.
 - In `dev`, requests without API key can still resolve to `DEV_USER_EMAIL` fallback.
+
+Security notes:
+- Never commit API keys to git or paste them into shared logs.
+- Prefer Cloudflare URL (`https`) over plain HTTP endpoints.
+- Rotate keys if exposed; old key is revoked when a new one is generated.
