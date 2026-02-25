@@ -42,7 +42,7 @@ python -m cli.main db-init
 ## Deployment
 
 ### GitHub Actions
-A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master` and `dev`.
+A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatically builds and pushes multi-arch images (amd64, arm64) to **GitHub Container Registry (ghcr.io)** on every push to `master`.
 
 ### Environment Types
 - **Persistent deployment (`make deploy`)**
@@ -53,15 +53,13 @@ A CI/CD pipeline is configured in `.github/workflows/publish.yml`. It automatica
   - Reserved for external access (for example Cloudflare Tunnel -> `http://192.168.178.38:8787`)
 - **Development (`make dev`)**
   - Uses `docker-compose.yml`
-  - Pulls `ghcr.io/branchenprimus/food-tracker-cli:dev`
-  - Starts a dedicated `watchtower-dev` that auto-updates when new `dev` images are published (15s polling interval)
+  - Builds a local image from your current source tree
   - Persists DB/cache in docker volume `food-data-dev` at `/app/data` (`data/app.db`, `data/widget_cache.json` inside container)
   - Independent URL: [http://localhost:8686](http://localhost:8686)
   - `make dev` prints the access URL after startup
   - Must not bind to `8787` so it cannot interfere with the deployed tunnel endpoint
 - **Local development build (`make dev-local`)**
-  - Builds from your local source tree
-  - Use this when testing unpushed local code
+  - Alias for `make dev`
 - **Branch verification**
   - `make master` was removed
   - Use CI (GitHub Actions) as the branch verification gate
@@ -105,8 +103,6 @@ make deploy
 # 2) Start a separate development instance
 make dev
 ```
-
-`make dev` only needs to be run once initially. After that, pushes to `dev` publish a new `:dev` image and `watchtower-dev` updates automatically.
 
 Expected URLs:
 - Deploy: [http://localhost:8787](http://localhost:8787)
