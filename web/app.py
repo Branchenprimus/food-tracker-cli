@@ -15,15 +15,19 @@ service = FoodService()
 CMD_VERSION = os.getenv("APP_VERSION", "dev")
 CMD_ENV = os.getenv("APP_ENV", "dev")
 CMD_COMMIT = os.getenv("APP_COMMIT", "unknown")
+CMD_REPOSITORY = os.getenv("APP_REPOSITORY", "Branchenprimus/food-tracker-cli")
 
 @app.get("/api/info")
 def get_info():
-    short_commit = CMD_COMMIT[:7] if CMD_COMMIT and CMD_COMMIT != "unknown" else CMD_COMMIT
+    has_commit = bool(CMD_COMMIT and CMD_COMMIT != "unknown")
+    short_commit = CMD_COMMIT[:7] if has_commit else CMD_COMMIT
+    commit_url = f"https://github.com/{CMD_REPOSITORY}/commit/{CMD_COMMIT}" if has_commit else ""
     return {
         "version": CMD_VERSION,
         "env": CMD_ENV,
         "commit": CMD_COMMIT,
-        "display_version": f"{CMD_VERSION}@{short_commit}" if short_commit else CMD_VERSION
+        "display_version": f"{CMD_VERSION}@{short_commit}" if short_commit else CMD_VERSION,
+        "commit_url": commit_url
     }
 
 # Serve static files

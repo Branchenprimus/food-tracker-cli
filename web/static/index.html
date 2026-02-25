@@ -160,10 +160,15 @@
                 No entries for this day
             </div>
         </div>
-        <div
+        <a
+            :href="appInfo.commitUrl || '#'"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-disabled="!appInfo.commitUrl"
+            :class="appInfo.commitUrl ? 'cursor-pointer' : 'pointer-events-none cursor-default'"
             class="fixed bottom-4 right-4 text-[10px] bg-black/80 text-white px-2 py-1 rounded-md font-mono backdrop-blur-sm shadow-sm hover:opacity-100 opacity-60 transition-opacity">
             {{ appInfo.env }}:{{ appInfo.displayVersion }}
-        </div>
+        </a>
     </div>
 
     <script>
@@ -182,7 +187,7 @@
                         serving_amount: 1.0, confidence: 0.8, entry_time: new Date().toTimeString().substr(0, 5)
                     },
                     chartView: 'week',
-                    appInfo: { version: '...', env: '...', commit: '', displayVersion: '...' },
+                    appInfo: { version: '...', env: '...', commit: '', displayVersion: '...', commitUrl: '' },
                     lastChartUpdate: 0,
                     editingEntryId: null,
                     editEntry: null
@@ -410,7 +415,8 @@
                         const shortCommit = info.commit ? String(info.commit).slice(0, 7) : ''
                         this.appInfo = {
                             ...info,
-                            displayVersion: info.display_version || (shortCommit ? `${info.version}@${shortCommit}` : info.version)
+                            displayVersion: info.display_version || (shortCommit ? `${info.version}@${shortCommit}` : info.version),
+                            commitUrl: info.commit_url || ''
                         }
                     } catch (e) {
                         console.error(e)
