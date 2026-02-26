@@ -1,7 +1,10 @@
 .PHONY: deploy dev dev-local down down-dev down-deploy logs logs-dev logs-deploy
 
-DEPLOY_COMPOSE = docker compose --env-file .env -f deploy/compose.yml
-DEV_COMPOSE = docker compose -f docker-compose.yml
+DOCKER ?= $(shell which docker 2>/dev/null || which podman 2>/dev/null || echo docker)
+COMPOSE ?= $(DOCKER) compose
+
+DEPLOY_COMPOSE = $(COMPOSE) --env-file .env -f deploy/compose.yml
+DEV_COMPOSE = $(COMPOSE) -f docker-compose.yml
 DEPLOY_URL = http://localhost:8787
 DEV_URL = http://localhost:8686
 APP_VERSION = $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
