@@ -20,15 +20,28 @@
 
 <body class="bg-gray-50 text-gray-900 min-h-screen">
     <div id="app" class="max-w-md mx-auto p-4">
-        <header class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold tracking-tight">Food Tracker</h1>
-                <div class="flex items-center text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded-full text-sm">
-                    <span>🔥 {{ streak }}</span>
+        <header class="flex justify-between items-center gap-3 mb-6">
+            <div class="flex items-center gap-3 min-w-0">
+                <a
+                    href="https://app-dashboard.darwin-labs.org"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-100 hover:text-black"
+                    aria-label="Back to Pi dashboard"
+                    title="Back to Pi dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                        <line x1="9" y1="12" x2="21" y2="12"></line>
+                    </svg>
+                </a>
+                <div class="flex items-center gap-2 min-w-0">
+                    <h1 class="text-2xl font-bold tracking-tight truncate">Food Tracker</h1>
+                    <div class="flex items-center text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded-full text-sm whitespace-nowrap">
+                        <span>🔥 {{ streak }}</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
                 <button @click="changeDate(-1)" class="p-1 hover:bg-gray-200 rounded-full transition text-gray-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
