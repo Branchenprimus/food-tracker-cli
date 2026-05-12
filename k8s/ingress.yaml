@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: food-tracker
+  namespace: food-tracker
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: food.darwin-labs.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: food-tracker
+                port:
+                  number: 80
