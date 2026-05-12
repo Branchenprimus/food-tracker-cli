@@ -11,6 +11,9 @@ APP_VERSION = $(shell git describe --tags --always --dirty 2>/dev/null || echo d
 APP_COMMIT = $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 APP_GIT_REF = $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo dev)
 
+test:
+	python -m pytest test/
+
 deploy:
 	$(DEPLOY_COMPOSE) pull
 	$(DEPLOY_COMPOSE) up -d
