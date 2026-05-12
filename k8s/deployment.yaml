@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: food-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: food-tracker
+  template:
+    metadata:
+      labels:
+        app: food-tracker
+    spec:
+      containers:
+        - name: food-tracker
+          image: ghcr.io/branchenprimus/food-tracker-cli:latest
+          ports:
+            - containerPort: 8787

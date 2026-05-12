@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-tracker
+spec:
+  selector:
+    app: food-tracker
+  ports:
+    - port: 80
+      targetPort: 8787
+  type: ClusterIP
